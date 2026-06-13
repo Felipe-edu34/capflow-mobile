@@ -1,82 +1,71 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ActivityIndicator, StatusBar } from 'react-native';
-import axios from 'axios';
-
-// OBSERVAÇÃO IMPORTANTE: 
-// Como estamos testando no celular físico, não podemos usar '127.0.0.1'.
-// No próximo passo eu vou te ensinar a descobrir o número de IP do seu computador 
-// para colocarmos aqui, beleza? Por enquanto deixei esse texto de aviso.
-const API_URL = 'http://SEU_IP_DO_COMPUTADOR_AQUI:8000/api'; 
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import axios from 'axios'; // Agora que está instalado corretamente, o celular vai reconhecer!
 
 export default function App() {
-  // O "useState" serve para o React guardar o que o usuário digita na tela
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // Ativa a rodinha de carregamento
-  const [token, setToken] = useState(null);       // Guarda o status se o login deu certo
+  // --- ESTADOS (Memória do React) ---
+  const [username, setUsername] = useState(''); 
+  const [password, setPassword] = useState(''); 
+  const [loading, setLoading] = useState(false); 
+  const [token, setToken] = useState(null); 
+  const [statusMessage, setStatusMessage] = useState('Aguardando login...'); 
 
-  // Função que é disparada quando o usuário clica no botão "Entrar"
+  // --- FUNÇÃO QUE ENVIA OS DADOS AO DJANGO ---
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert('Aviso', 'Por favor, preencha todos os campos.');
+      setStatusMessage('Por favor, preencha todos os campos.');
       return;
     }
 
-    setLoading(true); // Ativa a rodinha de carregamento
+    setLoading(true); 
+    setStatusMessage('Conectando ao servidor...');
     
     try {
-      // Como estamos rodando na Web do computador, usamos 'localhost:8000'.
-      // (Quando você for testar no Wi-Fi de casa pelo celular físico, mudaremos para o IP da sua máquina!)
-      const response = await axios.post('http://localhost:8000/api/token/', {
+      // O celular envia os dados via Wi-Fi para o IP do seu computador na porta 8000
+      const response = await axios.post('http://192.168.0.11:8000/api/token/', {
         username: username,
         password: password
       });
 
-      // Se o Django aceitar o usuário e senha, ele devolve o token aqui:
+      // Se o Django validar, ele entrega o token
       const userToken = response.data.token;
+      setToken(userToken); 
+      setStatusMessage('Login realizado com sucesso!');
       
-      setToken(userToken); // Salva o token no app para liberar o painel
-      Alert.alert('Sucesso', 'Login realizado com sucesso!');
     } catch (error) {
       console.log(error);
-      Alert.alert('Erro', 'Usuário/Senha incorretos ou erro de conexão com o Django.');
+      setStatusMessage('Erro de conexão ou dados incorretos.');
     } finally {
-      setLoading(false); // Para a rodinha de carregamento
+      setLoading(false); 
     }
   };
 
-  // SE O LOGIN DEU CERTO (TOKEN EXISTE), MOSTRA O PAINEL DO CAPFLOW
+  // --- CONTROLADOR DE TELAS ---
+  
+  // Se o token existir, mostra a tela do Painel
   if (token) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        
         <Text style={styles.title}>🧢 Painel CapFlow</Text>
-        <Text style={styles.subtitle}>Gerenciamento de Tecidos e Estoque</Text>
+        <Text style={styles.subtitle}>Gerenciamento de Estoque</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardText}>🎉 Parabéns! Você se autenticou no Django com sucesso.</Text>
+          <Text style={styles.cardText}>🎉 Sucesso! Você está logado pelo celular.</Text>
           <Text style={[styles.cardText, { marginTop: 10, color: '#2563eb', fontWeight: 'bold' }]}>
-            Token de Acesso: {token.substring(0, 10)}...
+            Token: {token.substring(0, 15)}...
           </Text>
         </View>
 
-        {/* Botão para deslogar e limpar o token, voltando para o login */}
-        <TouchableOpacity 
-          style={[styles.button, { backgroundColor: '#ef4444', marginTop: 20 }]} 
-          onPress={() => setToken(null)}
-        >
-          <Text style={styles.buttonText}>Sair do Sistema</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: '#ef4444' }]} onPress={() => setToken(null)}>
+          <Text style={styles.buttonText}>Sair</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // CASO CONTRÁRIO (SE NÃO TIVER TOKEN), CONTINUA MOSTRANDO A TELA DE LOGIN:
+  // Se não tiver token, mostra a tela de Login padrão
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      
       <Text style={styles.title}>🧢 CapFlow</Text>
       <Text style={styles.subtitle}>Gestão de Estoque Setorizado</Text>
 
@@ -86,7 +75,7 @@ export default function App() {
           style={styles.input} 
           placeholder="Ex: admin" 
           value={username}
-          onChangeText={setUsername} // Atualiza a variável username conforme digita
+          onChangeText={setUsername} 
           autoCapitalize="none"
         />
 
@@ -94,15 +83,17 @@ export default function App() {
         <TextInput 
           style={styles.input} 
           placeholder="••••••••" 
-          secureTextEntry={true} // Esconde as letras da senha com pontinhos
+          secureTextEntry={true} 
           value={password}
-          onChangeText={setPassword}
+          onChangeText={setPassword} 
         />
       </View>
 
+      <Text style={styles.statusText}>Status: {statusMessage}</Text>
+
       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
         {loading ? (
-          <ActivityIndicator color="#ffffff" /> // Mostra a rodinha girando
+          <ActivityIndicator color="#ffffff" /> 
         ) : (
           <Text style={styles.buttonText}>Entrar no Sistema</Text>
         )}
@@ -111,11 +102,11 @@ export default function App() {
   );
 }
 
-// Estilização visual (CSS do React Native)
+// --- ESTILOS VISUAIS ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f9',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -133,7 +124,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
@@ -158,6 +149,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: '100%',
     alignItems: 'center',
+    marginTop: 10,
   },
   buttonText: {
     color: '#ffffff',
@@ -165,7 +157,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f1f5f9',
     padding: 20,
     borderRadius: 12,
     width: '100%',
@@ -176,6 +168,12 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 15,
     color: '#334155',
+    textAlign: 'center',
+  },
+  statusText: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 15,
     textAlign: 'center',
   }
 });
