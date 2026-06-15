@@ -21,17 +21,24 @@ export default function App() {
   const [obsMov, setObsMov] = useState('');
   const [enviandoMov, setEnviandoMov] = useState(false);
 
+  // Assim que o token é salvo (login com sucesso), ele dispara a busca do estoque
   useEffect(() => {
     if (token) buscarEstoque();
   }, [token]);
 
+  // --- 1. FUNÇÃO DE BUSCAR OS ITENS NO BANCO ---
   const buscarEstoque = async () => {
     setLoadingEstoque(true);
     try {
-      const response = await axios.get('http://192.168.0.11:8000/api/itens/', {
-        headers: { Authorization: `Bearer ${token}` }
+      // Faz o GET na rota de itens, mostrando o "Crachá" (Token) para o Django
+      const response = await axios.get('http://127.0.0.1:8000/api/itens/', {
+        headers: { Authorization: `Token ${token}` }
       });
-      setItensEstoque(response.data);
+      
+      // Salva os dados na variável que constrói a tela
+      setItensEstoque(response.data); 
+      console.log("Itens do estoque recebidos:", response.data);
+      
     } catch (error) {
       console.log('Erro ao buscar estoque:', error);
     } finally {
@@ -39,6 +46,7 @@ export default function App() {
     }
   };
 
+  // --- 2. FUNÇÃO DE LOGIN (PEGAR O CRACHÁ) ---
   const handleLogin = async () => {
     if (!username || !password) {
       setStatusMessage('Por favor, preencha todos os campos.');
@@ -48,11 +56,17 @@ export default function App() {
     setStatusMessage('Conectando ao servidor...');
     
     try {
-      const response = await axios.post('http://192.168.0.11:8000/api/token/', {
+      // Bate na porta de autenticação
+      const response = await axios.post('http://127.0.0.1:8000/api/token/', {
         username: username,
         password: password
       });
-      setToken(response.data.token); 
+      
+      // Salva o token (aceita tanto o padrão antigo quanto o novo)
+      const tokenRecebido = response.data.access || response.data.token;
+      setToken(tokenRecebido); 
+      
+      console.log("Crachá recebido com sucesso:", tokenRecebido);
       setStatusMessage('Login realizado com sucesso!');
     } catch (error) {
       console.log(error);
@@ -62,6 +76,7 @@ export default function App() {
     }
   };
 
+  // --- 3. FUNÇÕES DO MODAL ---
   const abrirModal = (item) => {
     setItemSelecionado(item);
     setTipoMov('ENTRADA');
@@ -78,17 +93,17 @@ export default function App() {
 
     setEnviandoMov(true);
     try {
-      await axios.post('http://192.168.0.11:8000/api/movimentacoes/', {
+      await axios.post('http://127.0.0.1:8000/api/movimentacoes/', {
         item: itemSelecionado.id,
         tipo: tipoMov,
         quantidade_movimentada: qtdMov,
         observacao: obsMov
       }, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Token ${token}` }
       });
 
       setModalVisible(false);
-      buscarEstoque();
+      buscarEstoque(); // Atualiza a lista por trás
       Alert.alert('Sucesso', 'Movimentação registrada com sucesso!');
     } catch (error) {
       console.log(error);
@@ -98,6 +113,7 @@ export default function App() {
     }
   };
 
+  // --- RENDERIZAÇÃO DE CADA ITEM DA LISTA ---
   const renderizarItem = ({ item }) => (
     <TouchableOpacity style={styles.itemCard} onPress={() => abrirModal(item)}>
       <Text style={styles.itemTitle}>📦 {item.nome}</Text>
@@ -109,6 +125,7 @@ export default function App() {
     </TouchableOpacity>
   );
 
+  // --- TELA PRINCIPAL (LOGADO) ---
   if (token) {
     return (
       <View style={[styles.container, { paddingTop: 60, paddingBottom: 0 }]}>
@@ -187,6 +204,7 @@ export default function App() {
     );
   }
 
+  // --- TELA DE LOGIN (DESLOGADO) ---
   return (
     <View style={styles.container}>
       <Text style={styles.title}>🧢 CapFlow</Text>
