@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator,
 import axios from 'axios';
 
 export default function App() {
+  // --- ESTADOS DO SISTEMA ---
   const [username, setUsername] = useState(''); 
   const [password, setPassword] = useState(''); 
   const [loading, setLoading] = useState(false); 
@@ -15,7 +16,7 @@ export default function App() {
   // --- ESTADOS DO MODAL DE MOVIMENTAÇÃO ---
   const [modalVisible, setModalVisible] = useState(false);
   const [itemSelecionado, setItemSelecionado] = useState(null);
-  const [tipoMov, setTipoMov] = useState('ENTRADA'); // 'ENTRADA' ou 'SAIDA'
+  const [tipoMov, setTipoMov] = useState('ENTRADA'); 
   const [qtdMov, setQtdMov] = useState('');
   const [obsMov, setObsMov] = useState('');
   const [enviandoMov, setEnviandoMov] = useState(false);
@@ -39,19 +40,28 @@ export default function App() {
   };
 
   const handleLogin = async () => {
-    if (!username || !password) return setStatusMessage('Preencha os campos.');
-    setLoading(true); setStatusMessage('Conectando...');
+    if (!username || !password) {
+      setStatusMessage('Por favor, preencha todos os campos.');
+      return;
+    }
+    setLoading(true); 
+    setStatusMessage('Conectando ao servidor...');
+    
     try {
-      const response = await axios.post('http://192.168.0.11:8000/api/token/', { username, password });
-      setToken(response.data.token); setStatusMessage('Sucesso!');
+      const response = await axios.post('http://192.168.0.11:8000/api/token/', {
+        username: username,
+        password: password
+      });
+      setToken(response.data.token); 
+      setStatusMessage('Login realizado com sucesso!');
     } catch (error) {
-      setStatusMessage('Erro de conexão ou dados.');
+      console.log(error);
+      setStatusMessage('Erro de conexão ou usuário incorreto.');
     } finally {
-      setLoading(false);
+      setLoading(false); 
     }
   };
 
-  // --- FUNÇÃO PARA ABRIR O MODAL ---
   const abrirModal = (item) => {
     setItemSelecionado(item);
     setTipoMov('ENTRADA');
@@ -60,7 +70,6 @@ export default function App() {
     setModalVisible(true);
   };
 
-  // --- FUNÇÃO PARA ENVIAR A MOVIMENTAÇÃO AO DJANGO ---
   const salvarMovimentacao = async () => {
     if (!qtdMov || isNaN(qtdMov) || qtdMov <= 0) {
       Alert.alert('Erro', 'Digite uma quantidade válida.');
@@ -78,7 +87,6 @@ export default function App() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Se der certo, fecha o modal e recarrega a lista para mostrar o novo saldo
       setModalVisible(false);
       buscarEstoque();
       Alert.alert('Sucesso', 'Movimentação registrada com sucesso!');
@@ -91,7 +99,6 @@ export default function App() {
   };
 
   const renderizarItem = ({ item }) => (
-    // Transformamos o Card em um botão (TouchableOpacity)
     <TouchableOpacity style={styles.itemCard} onPress={() => abrirModal(item)}>
       <Text style={styles.itemTitle}>📦 {item.nome}</Text>
       <Text style={styles.itemText}>Quantidade Atual: {item.quantidade_atual} {item.unidade_medida}</Text>
@@ -123,18 +130,17 @@ export default function App() {
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderizarItem}
             contentContainerStyle={{ paddingBottom: 40 }} 
+            style={{ width: '100%' }}
             showsVerticalScrollIndicator={false}
           />
         )}
 
-        {/* --- MODAL FLUTUANTE DE MOVIMENTAÇÃO --- */}
         <Modal visible={modalVisible} transparent={true} animationType="slide">
           <View style={styles.modalFundo}>
             <View style={styles.modalCaixa}>
               <Text style={styles.modalTitulo}>Lançar Movimentação</Text>
               <Text style={styles.modalSub}>{itemSelecionado?.nome}</Text>
 
-              {/* Botões de Entrada / Saída */}
               <View style={styles.botoesTipo}>
                 <TouchableOpacity 
                   style={[styles.botaoTipo, tipoMov === 'ENTRADA' ? styles.botaoAtivoEntrada : null]} 
@@ -159,7 +165,7 @@ export default function App() {
               />
               <TextInput 
                 style={styles.inputModal} 
-                placeholder="Observação (Ex: Compra nova)" 
+                placeholder="Observação" 
                 value={obsMov}
                 onChangeText={setObsMov}
               />
@@ -185,11 +191,16 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.title}>🧢 CapFlow</Text>
       <Text style={styles.subtitle}>Gestão de Estoque Setorizado</Text>
+
       <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="Usuário" value={username} onChangeText={setUsername} autoCapitalize="none" />
-        <TextInput style={styles.input} placeholder="Senha" secureTextEntry={true} value={password} onChangeText={setPassword} />
+        <Text style={styles.label}>Nome de Usuário</Text>
+        <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" />
+        <Text style={styles.label}>Senha</Text>
+        <TextInput style={styles.input} secureTextEntry={true} value={password} onChangeText={setPassword} />
       </View>
+
       <Text style={styles.statusText}>{statusMessage}</Text>
+
       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
         {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.textoBranco}>Entrar no Sistema</Text>}
       </TouchableOpacity>
@@ -197,7 +208,6 @@ export default function App() {
   );
 }
 
-// --- ESTILIZAÇÃO VISUAL ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
   header: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottomWidth: 1, borderColor: '#e2e8f0', paddingBottom: 15 },
@@ -206,6 +216,7 @@ const styles = StyleSheet.create({
   logoutButton: { backgroundColor: '#ef4444', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 6 },
   logoutText: { color: '#fff', fontWeight: 'bold' },
   inputContainer: { width: '100%', marginBottom: 16 },
+  label: { fontSize: 14, fontWeight: '600', color: '#475569', marginBottom: 6 },
   input: { backgroundColor: '#ffffff', width: '100%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, fontSize: 16, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 16 },
   button: { backgroundColor: '#2563eb', paddingVertical: 14, borderRadius: 8, width: '100%', alignItems: 'center' },
   statusText: { fontSize: 13, color: '#64748b', marginBottom: 15, textAlign: 'center' },
@@ -214,8 +225,6 @@ const styles = StyleSheet.create({
   itemText: { fontSize: 15, color: '#475569', marginBottom: 4 },
   alertaEstoque: { color: '#ef4444', fontWeight: 'bold', fontSize: 13, marginTop: 8 },
   toqueAqui: { color: '#2563eb', fontSize: 12, marginTop: 10, textAlign: 'right', fontWeight: '600' },
-  
-  // Estilos do Modal
   modalFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalCaixa: { backgroundColor: '#fff', padding: 24, borderRadius: 12, width: '100%', alignItems: 'center' },
   modalTitulo: { fontSize: 20, fontWeight: 'bold', color: '#0f172a', marginBottom: 5 },
