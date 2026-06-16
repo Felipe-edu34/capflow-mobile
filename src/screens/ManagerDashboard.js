@@ -17,6 +17,7 @@ const initialForm = {
   unidade: 'UN',
   minimo: '',
   setorId: '',
+  gerenteId: '',
 };
 
 function getSetorKey(item) {
@@ -113,7 +114,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   const handleCadastrarProduto = async () => {
-    if (!form.nome || !form.quantidade || !form.minimo || !form.setorId) {
+    if (!form.nome || !form.quantidade || !form.minimo || !form.setorId || !form.gerenteId) {
       alert('Por favor, preencha todos os campos.');
       return;
     }
@@ -126,6 +127,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     formData.append('unidade_medida', form.unidade);
     formData.append('estoque_minimo', form.minimo);
     formData.append('setor', form.setorId);
+    formData.append('gerente', form.gerenteId);
 
     if (imagem) {
       formData.append('imagem', imagem);

@@ -63,6 +63,15 @@ export default function ProductForm({
         />
       </View>
 
+      <TextInput
+        style={styles.input}
+        placeholder="ID do gerente do setor"
+        placeholderTextColor="#8A97A8"
+        keyboardType="numeric"
+        value={form.gerenteId}
+        onChangeText={(value) => setFormValue('gerenteId', value)}
+      />
+
       <View style={styles.uploadBox}>
         <Text style={styles.uploadTitle}>Imagem do produto</Text>
         <Text style={styles.uploadText}>
