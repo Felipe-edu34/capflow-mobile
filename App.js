@@ -53,8 +53,9 @@ export default function App() {
     );
   }
 
+  
   if (perfil.cargo === 'GERENTE' || perfil.cargo === 'DONO') {
-    return <ManagerDashboard perfil={perfil} handleLogout={handleLogout} />;
+    return <ManagerDashboard perfil={perfil} token={token} handleLogout={handleLogout} />; // <-- Adicionamos token={token} aqui
   }
 
   return <EmployeeDashboard perfil={perfil} handleLogout={handleLogout} />;
