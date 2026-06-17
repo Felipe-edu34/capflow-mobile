@@ -6,6 +6,7 @@ import axios from 'axios';
 import InventorySection from '../components/manager/InventorySection';
 import MetricCard from '../components/manager/MetricCard';
 import ProductDetailModal from '../components/manager/ProductDetailModal';
+import MovementHistory from '../components/manager/MovementHistory';
 import ProductForm from '../components/manager/ProductForm';
 import SectorForm from '../components/manager/SectorForm';
 import styles from '../components/manager/managerStyles';
@@ -50,6 +51,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [imagem, setImagem] = useState(null);
   const [setorSelecionado, setSetorSelecionado] = useState('todos');
   const [busca, setBusca] = useState('');
+  const [movimentacoes, setMovimentacoes] = useState([]);
 
   // 2. BUSCA DE DADOS
   const carregarItens = async () => {
@@ -77,9 +79,20 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   useEffect(() => {
-    carregarItens();
-    carregarSetores();
+  carregarItens();
+  carregarSetores();
+  carregarMovimentacoes(); // Adicione esta linha
   }, []);
+
+  const carregarMovimentacoes = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/movimentacoes/`, {
+      headers: { Authorization: `Token ${token}` },
+    });
+    setMovimentacoes(response.data);
+  } catch (error) {
+    console.log('Erro ao buscar movimentações:', error);
+  }};
 
   // 3. INTELIGÊNCIA DE INVENTÁRIO
   const { indicadores, gruposPorSetor, setores } = useMemo(() => {
@@ -301,23 +314,33 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
             {/* SELETOR DE ABAS */}
             <View style={styles.tabsRow}>
+              {/* Botão de Produto */}
               <TouchableOpacity
                 style={[styles.tabButton, abaAtiva === 'produtos' && styles.tabButtonActive]}
                 onPress={() => setAbaAtiva('produtos')}
-                activeOpacity={0.85}
               >
                 <Text style={[styles.tabButtonText, abaAtiva === 'produtos' && styles.tabButtonTextActive]}>
                   Novo Produto
                 </Text>
               </TouchableOpacity>
 
+              {/* Botão de Setor */}
               <TouchableOpacity
                 style={[styles.tabButton, abaAtiva === 'setores' && styles.tabButtonActive]}
                 onPress={() => setAbaAtiva('setores')}
-                activeOpacity={0.85}
               >
                 <Text style={[styles.tabButtonText, abaAtiva === 'setores' && styles.tabButtonTextActive]}>
                   Novo Setor
+                </Text>
+              </TouchableOpacity>
+
+              {/* NOVO BOTÃO DE MOVIMENTAÇÕES */}
+              <TouchableOpacity
+                style={[styles.tabButton, abaAtiva === 'movimentacoes' && styles.tabButtonActive]}
+                onPress={() => setAbaAtiva('movimentacoes')}
+              >
+                <Text style={[styles.tabButtonText, abaAtiva === 'movimentacoes' && styles.tabButtonTextActive]}>
+                  Movimentações
                 </Text>
               </TouchableOpacity>
             </View>
@@ -350,29 +373,39 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
                 salvando={salvando}
                 listaSetores={listaSetores}
               />
-            ) : (
+            ) : abaAtiva === 'setores' ? (
               <SectorForm
                 form={formSetor}
                 setFormValue={setSectorFormValue}
                 onSubmit={handleCadastrarSetor}
                 salvando={salvando}
               />
+            ) : (
+              // Aba MOVIMENTAÇÕES: aqui podemos colocar um card explicativo ou deixar vazio
+              <View style={[styles.listPanel, { padding: 20 }]}>
+                <Text style={styles.sectionTitle}>Painel de Auditoria</Text>
+                <Text style={styles.sectionEyebrow}>O histórico completo de entradas e saídas será exibido ao lado.</Text>
+              </View>
             )}
           </View>
 
           <View style={styles.listColumn}>
-            <InventorySection
-              grupos={gruposPorSetor}
-              setores={setores}
-              setorSelecionado={setorSelecionado}
-              onSelecionarSetor={setSetorSelecionado}
-              busca={busca}
-              onBuscaChange={setBusca}
-              loading={loading}
-              totalItens={itens.length}
-              baseUrl={BASE_URL}
-              onOpenItem={setItemSelecionado}
-            />
+            {abaAtiva === 'movimentacoes' ? (
+              <MovementHistory movimentacoes={movimentacoes} />
+            ) : (
+              <InventorySection
+                grupos={gruposPorSetor}
+                setores={setores}
+                setorSelecionado={setorSelecionado}
+                onSelecionarSetor={setSetorSelecionado}
+                busca={busca}
+                onBuscaChange={setBusca}
+                loading={loading}
+                totalItens={itens.length}
+                baseUrl={BASE_URL}
+                onOpenItem={setItemSelecionado}
+              />
+            )}
           </View>
         </View>
       </ScrollView>
