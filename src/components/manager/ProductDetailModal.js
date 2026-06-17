@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
 
 export default function ProductDetailModal({ item, visible, onClose, onExcluir, onAtualizar, listaSetores = [], baseUrl }) {
   const [isEditing, setIsEditing] = useState(false);
   const [formEdit, setFormEdit] = useState({});
   const [novaImagem, setNovaImagem] = useState(null);
 
-  // Toda vez que o modal abrir com um item novo, preenchemos o formulário de edição com os dados dele
+  // Sincroniza o formulário local sempre que um novo item é selecionado
   useEffect(() => {
     if (item) {
       setFormEdit({
@@ -27,7 +27,7 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
     onAtualizar(item.id, formEdit, novaImagem);
   };
 
-  // Componente de rótulo para manter o padrão profissional
+  // Componente de rótulo para padronização de formulários corporativos
   const Label = ({ children }) => (
     <Text style={{ color: '#1E293B', fontSize: 12, fontWeight: '700', marginBottom: 4, marginTop: 12 }}>{children}</Text>
   );
@@ -36,6 +36,8 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
     backgroundColor: '#F8FAFC', color: '#0F172A', borderWidth: 1, borderColor: '#CBD5E1', 
     borderRadius: 8, paddingHorizontal: 12, height: 40, fontSize: 14, marginBottom: 4
   };
+
+  const imageUri = item.imagem?.startsWith('http') ? item.imagem : `${baseUrl}${item.imagem}`;
 
   return (
     <Modal transparent visible={visible} animationType="fade">
@@ -46,7 +48,7 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
           {/* CABEÇALHO DO MODAL */}
           <View style={{ backgroundColor: '#06111F', padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
-              {isEditing ? '✏️ Editar Produto' : '📦 Detalhes do Produto'}
+              {isEditing ? 'Editar Produto' : 'Detalhes do Produto'}
             </Text>
             <TouchableOpacity onPress={onClose} style={{ padding: 5 }}>
               <Text style={{ color: '#94A3B8', fontSize: 16, fontWeight: 'bold' }}>X</Text>
@@ -76,14 +78,37 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
                 </View>
 
                 <Label>Setor responsável</Label>
-                <select
-                  style={{ ...inputStyle, width: '100%', outline: 'none' }}
-                  value={formEdit.setor}
-                  onChange={(e) => setFormEdit({ ...formEdit, setor: e.target.value })}
-                >
-                  <option value="">Selecione...</option>
-                  {listaSetores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
-                </select>
+                {/* Abstração segura para renderizar o elemento HTML select sem quebrar o Metro Bundler */}
+                <View style={{ 
+                  backgroundColor: '#F8FAFC', 
+                  borderWidth: 1, 
+                  borderColor: '#CBD5E1', 
+                  borderRadius: 8, 
+                  overflow: 'hidden',
+                  height: 40,
+                  justifyContent: 'center',
+                  marginBottom: 4
+                }}>
+                  <select
+                    style={{ 
+                      width: '100%', 
+                      height: '100%',
+                      backgroundColor: 'transparent',
+                      color: '#0F172A', 
+                      border: 'none',
+                      outline: 'none',
+                      paddingLeft: 12,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit'
+                    }}
+                    value={formEdit.setor}
+                    onChange={(e) => setFormEdit({ ...formEdit, setor: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    {listaSetores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                  </select>
+                </View>
 
                 <Label>Atualizar Imagem (Opcional)</Label>
                 <input type="file" accept="image/*" onChange={(e) => setNovaImagem(e.target.files[0])} style={{ marginTop: 5 }} />
@@ -94,7 +119,10 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
               <View>
                 {item.imagem && (
                   <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                    <img src={`${baseUrl}${item.imagem}`} alt={item.nome} style={{ width: 150, height: 150, borderRadius: 8, objectFit: 'cover', borderWidth: 1, borderColor: '#E2E8F0' }} />
+                    <Image 
+                      source={{ uri: imageUri }} 
+                      style={{ width: 150, height: 150, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }} 
+                    />
                   </View>
                 )}
                 
@@ -114,7 +142,7 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
             )}
           </ScrollView>
 
-          {/* RODAPÉ COM BOTÕES */}
+          {/* RODAPÉ COM BOTÕES DE AÇÃO */}
           <View style={{ padding: 20, borderTopWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F8FAFC' }}>
             {isEditing ? (
               <>

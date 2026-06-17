@@ -49,7 +49,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [formSetor, setFormSetor] = useState(initialSectorForm);
   const [imagem, setImagem] = useState(null);
   const [setorSelecionado, setSetorSelecionado] = useState('todos');
-  const [busca, setBusca] = useState(''); // Armazena o termo digitado pelo gerente
+  const [busca, setBusca] = useState('');
 
   // 2. BUSCA DE DADOS
   const carregarItens = async () => {
@@ -87,7 +87,12 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     let volume = 0;
     let itensCriticos = 0;
 
-    itens.forEach((item) => {
+    const itensFiltrados = itens.filter((item) => {
+      if (!busca.trim()) return true;
+      return item.nome.toLowerCase().includes(busca.toLowerCase());
+    });
+
+    itensFiltrados.forEach((item) => {
       const key = getSetorKey(item);
       const nome = getSetorNome(item);
       const estoqueBaixo = Number(item.quantidade_atual) <= Number(item.estoque_minimo);
@@ -108,7 +113,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
     return {
       indicadores: {
-        totalItens: itens.length,
+        totalItens: itensFiltrados.length,
         itensCriticos,
         setores: grupos.length,
         volume,
@@ -116,7 +121,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       gruposPorSetor: grupos,
       setores: grupos.map(({ key, nome }) => ({ key, nome })),
     };
-  }, [itens]);
+  }, [itens, busca]);
 
   // Manipuladores dos formulários
   const setProductFormValue = (field, value) => {
@@ -172,9 +177,14 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarItens(); 
     } catch (error) {
       console.log('Erro detalhado da API:', error.response?.data || error.message);
+      
       if (error.response?.data && typeof error.response.data === 'object') {
+        // CORREÇÃO TÉCNICA: Verificação de tipo segura para evitar falha no método .join()
         const errosServidor = Object.entries(error.response.data)
-          .map(([campo, msgs]) => `${campo}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+          .map(([campo, msgs]) => {
+            const mensagemTratada = Array.isArray(msgs) ? msgs.join(', ') : String(msgs);
+            return `${campo}: ${mensagemTratada}`;
+          })
           .join('\n');
         alert(`Erro retornado pelo Django:\n${errosServidor}`);
       } else {
@@ -214,7 +224,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
-  // Nova função de Exclusão direta no Django
   const handleExcluirProduto = async (idProduto) => {
     if (!window.confirm('Tem certeza que deseja excluir este produto permanentemente?')) return;
 
@@ -227,11 +236,10 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarItens();
     } catch (error) {
       console.log('Erro ao excluir:', error);
-      alert('Erro ao excluir o produto.');
+      alert('Erro ao excluir the produto.');
     }
   };
 
-  // Nova função de Edição (PATCH) com suporte a arquivos de imagem
   const handleAtualizarProduto = async (idProduto, dadosAtualizados, novaImagem) => {
     try {
       const formData = new FormData();
@@ -252,7 +260,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         },
       });
 
-      alert('Produto atualizado com sucesso!');
+      alert('Produto updated com sucesso!');
       setItemSelecionado(null);
       carregarItens();
     } catch (error) {
@@ -358,6 +366,8 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
               setores={setores}
               setorSelecionado={setorSelecionado}
               onSelecionarSetor={setSetorSelecionado}
+              busca={busca}
+              onBuscaChange={setBusca}
               loading={loading}
               totalItens={itens.length}
               baseUrl={BASE_URL}

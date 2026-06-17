@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Image, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import styles from './managerStyles';
 
 function ProductCard({ item, baseUrl, onPress }) {
@@ -53,6 +53,8 @@ export default function InventorySection({
   setores,
   setorSelecionado,
   onSelecionarSetor,
+  busca,            // Propriedade injetada: armazena o texto atual da busca
+  onBuscaChange,     // Propriedade injetada: função despachante que altera o estado da busca
   loading,
   totalItens,
   baseUrl,
@@ -63,6 +65,7 @@ export default function InventorySection({
 
   return (
     <View style={styles.listPanel}>
+      {/* CABEÇALHO DO INVENTÁRIO */}
       <View style={styles.listHeader}>
         <View>
           <Text style={styles.sectionEyebrow}>Inventário</Text>
@@ -71,6 +74,28 @@ export default function InventorySection({
         <View style={styles.countBadge}>
           <Text style={styles.countBadgeText}>{totalItens} itens</Text>
         </View>
+      </View>
+
+      {/* ELEMENTO INJETADO: BARRA DE PESQUISA MINIMALISTA E OPERACIONAL */}
+      <View style={{ marginBottom: 16 }}>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              marginBottom: 0,
+              backgroundColor: '#F8FAFC',
+              color: '#0F172A',
+              borderColor: '#CBD5E1',
+              fontSize: 13,
+              paddingVertical: 10,
+              fontWeight: '500',
+            },
+          ]}
+          placeholder="Pesquisar produto pelo nome..."
+          placeholderTextColor="#94A3B8"
+          value={busca}
+          onChangeText={onBuscaChange}
+        />
       </View>
 
       {loading ? (
@@ -85,6 +110,7 @@ export default function InventorySection({
         </View>
       ) : (
         <>
+          {/* SELEÇÃO DE ABAS DE SETORES */}
           <View style={styles.sectorTabs}>
             <TouchableOpacity
               style={[styles.sectorTab, setorSelecionado === 'todos' && styles.sectorTabActive]}
@@ -108,6 +134,7 @@ export default function InventorySection({
             ))}
           </View>
 
+          {/* RENDERIZAÇÃO DOS BLOCOS DE SETOR */}
           {gruposVisiveis.map((grupo) => (
             <View key={grupo.key} style={styles.sectorBlock}>
               <View style={styles.sectorHeader}>
