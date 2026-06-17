@@ -7,7 +7,7 @@ import InventorySection from '../components/manager/InventorySection';
 import MetricCard from '../components/manager/MetricCard';
 import ProductDetailModal from '../components/manager/ProductDetailModal';
 import ProductForm from '../components/manager/ProductForm';
-import SectorForm from '../components/manager/SectorForm'; // <-- Novo componente importado
+import SectorForm from '../components/manager/SectorForm';
 import styles from '../components/manager/managerStyles';
 
 const API_URL = 'http://127.0.0.1:8000/api';
@@ -26,7 +26,6 @@ const initialSectorForm = {
   responsavelId: '',
 };
 
-
 function getSetorKey(item) {
   return String(item.setor || item.setor_id || item.setor_nome || 'sem-setor');
 }
@@ -38,10 +37,10 @@ function getSetorNome(item) {
 }
 
 export default function ManagerDashboard({ perfil, token, handleLogout }) {
-  // 1. TODOS OS HOOKS DEVEM FICAR JUNTOs AQUI NO TOPO DA FUNÇÃO:
+  // 1. ESTADOS DO DASHBOARD
   const [abaAtiva, setAbaAtiva] = useState('produtos');
   const [itens, setItens] = useState([]);
-  const [listaSetores, setListaSetores] = useState([]); // <-- Certifique-se de que ela está exatamente aqui!
+  const [listaSetores, setListaSetores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [itemSelecionado, setItemSelecionado] = useState(null);
@@ -50,8 +49,9 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [formSetor, setFormSetor] = useState(initialSectorForm);
   const [imagem, setImagem] = useState(null);
   const [setorSelecionado, setSetorSelecionado] = useState('todos');
+  const [busca, setBusca] = useState(''); // Armazena o termo digitado pelo gerente
 
-  // 2. SÓ DEPOIS DOS ESTADOS VEM AS FUNÇÕES (carregarItens, carregarSetores, etc...)
+  // 2. BUSCA DE DADOS
   const carregarItens = async () => {
     try {
       const response = await axios.get(`${API_URL}/itens/`, {
@@ -65,7 +65,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
-  // --- NOVA FUNÇÃO PARA CARREGAR OS SETORES ---
   const carregarSetores = async () => {
     try {
       const response = await axios.get(`${API_URL}/setores/`, {
@@ -77,14 +76,12 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
-  // Executa ao abrir a tela
   useEffect(() => {
     carregarItens();
-    carregarSetores(); // <-- Busca os setores logo no início
+    carregarSetores();
   }, []);
-  
 
-  // Motor de cálculo de inteligência do inventário (useMemo)
+  // 3. INTELIGÊNCIA DE INVENTÁRIO
   const { indicadores, gruposPorSetor, setores } = useMemo(() => {
     const mapaSetores = new Map();
     let volume = 0;
@@ -121,12 +118,11 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     };
   }, [itens]);
 
-  // Manipuladores de estado do formulário de produto
+  // Manipuladores dos formulários
   const setProductFormValue = (field, value) => {
     setFormProduto((current) => ({ ...current, [field]: value }));
   };
 
-  // Manipuladores de estado do formulário de setor
   const setSectorFormValue = (field, value) => {
     setFormSetor((current) => ({ ...current, [field]: value }));
   };
@@ -136,17 +132,15 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     if (arquivo) setImagem(arquivo);
   };
 
-  // Envio de novo produto (POST) para o Django
-  // Envio de novo produto (POST) para o Django
+  // --- FUNÇÕES OPERACIONAIS (POST, PATCH, DELETE) ---
+
   const handleCadastrarProduto = async () => {
-    // DIAGNÓSTICO INTELIGENTE DE VALIDAÇÃO
     const camposFaltando = [];
     if (!formProduto.nome?.trim()) camposFaltando.push('Nome do produto');
     if (!formProduto.quantidade?.toString().trim()) camposFaltando.push('Quantidade atual');
     if (!formProduto.minimo?.toString().trim()) camposFaltando.push('Estoque mínimo');
     if (!formProduto.setorId) camposFaltando.push('Setor responsável');
 
-    // Se houver qualquer campo faltando, avisa detalhadamente!
     if (camposFaltando.length > 0) {
       alert(`Não foi possível salvar.\nPor favor, preencha:\n• ${camposFaltando.join('\n• ')}`);
       return;
@@ -160,7 +154,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     formData.append('estoque_minimo', formProduto.minimo);
     formData.append('setor', formProduto.setorId);
 
-    // FOTO OPCIONAL: Só anexa se o usuário escolheu uma
     if (imagem) {
       formData.append('imagem', imagem);
     }
@@ -174,19 +167,14 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       });
 
       alert('Produto cadastrado com sucesso!');
-      
-      // Reseta o formulário e limpa a imagem antiga
       setFormProduto(initialProductForm);
       setImagem(null);
-      
-      // Atualiza o inventário imediatamente na tela
       carregarItens(); 
     } catch (error) {
       console.log('Erro detalhado da API:', error.response?.data || error.message);
-      
-      if (error.response?.data) {
+      if (error.response?.data && typeof error.response.data === 'object') {
         const errosServidor = Object.entries(error.response.data)
-          .map(([campo, msgs]) => `${campo}: ${msgs.join(', ')}`)
+          .map(([campo, msgs]) => `${campo}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
           .join('\n');
         alert(`Erro retornado pelo Django:\n${errosServidor}`);
       } else {
@@ -197,7 +185,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
-  // Envio de novo setor (POST) para o Django
   const handleCadastrarSetor = async () => {
     if (!formSetor.nome) {
       alert('Por favor, digite o nome do setor.');
@@ -217,13 +204,60 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
       alert('Setor operacional criado com sucesso!');
       setFormSetor(initialSectorForm);
-      carregarItens(); // Recarrega para computar as novas estruturas vazias se houver
-      carregarSetores(); // Recarrega a lista de setores
+      carregarItens();
+      carregarSetores();
     } catch (error) {
       console.log('Erro ao cadastrar setor:', error.response?.data || error.message);
       alert('Erro ao criar setor. Verifique as permissões ou ID do funcionário.');
     } finally {
       setSalvando(false);
+    }
+  };
+
+  // Nova função de Exclusão direta no Django
+  const handleExcluirProduto = async (idProduto) => {
+    if (!window.confirm('Tem certeza que deseja excluir este produto permanentemente?')) return;
+
+    try {
+      await axios.delete(`${API_URL}/itens/${idProduto}/`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+      alert('Produto excluído com sucesso!');
+      setItemSelecionado(null);
+      carregarItens();
+    } catch (error) {
+      console.log('Erro ao excluir:', error);
+      alert('Erro ao excluir o produto.');
+    }
+  };
+
+  // Nova função de Edição (PATCH) com suporte a arquivos de imagem
+  const handleAtualizarProduto = async (idProduto, dadosAtualizados, novaImagem) => {
+    try {
+      const formData = new FormData();
+      formData.append('nome', dadosAtualizados.nome);
+      formData.append('quantidade_atual', dadosAtualizados.quantidade_atual);
+      formData.append('unidade_medida', dadosAtualizados.unidade_medida);
+      formData.append('estoque_minimo', dadosAtualizados.estoque_minimo);
+      formData.append('setor', dadosAtualizados.setor);
+
+      if (novaImagem) {
+        formData.append('imagem', novaImagem);
+      }
+
+      await axios.patch(`${API_URL}/itens/${idProduto}/`, formData, {
+        headers: { 
+          Authorization: `Token ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      alert('Produto atualizado com sucesso!');
+      setItemSelecionado(null);
+      carregarItens();
+    } catch (error) {
+      console.log('Erro ao atualizar:', error.response?.data || error.message);
+      alert('Erro ao atualizar o produto.');
     }
   };
 
@@ -248,45 +282,39 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* HERO BANNER - DESIGN PROFISSIONAL */}
-<View style={[styles.hero, { backgroundColor: '#06111F', paddingVertical: 32, paddingHorizontal: 24 }]}>
-  <View style={styles.heroCopy}>
-    <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginBottom: 8 }}>
-      Painel Administrativo
-    </Text>
-    <Text style={{ color: '#94A3B8', fontSize: 14, marginBottom: 24 }}>
-      Gestão de catálogo e mapeamento de setores operacionais.
-    </Text>
+        <View style={[styles.hero, { backgroundColor: '#06111F', paddingVertical: 32, paddingHorizontal: 24 }]}>
+          <View style={styles.heroCopy}>
+            <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700', marginBottom: 8 }}>
+              Painel Administrativo
+            </Text>
+            <Text style={{ color: '#94A3B8', fontSize: 14, marginBottom: 24 }}>
+              Gestão de catálogo e mapeamento de setores operacionais.
+            </Text>
 
-    {/* SELETOR DE ABAS - VISUAL LIMPO */}
-    <View style={{ flexDirection: 'row', gap: 16 }}>
-      <TouchableOpacity
-        style={{
-          paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6,
-          backgroundColor: abaAtiva === 'produtos' ? '#10B981' : 'transparent',
-          borderWidth: 1, borderColor: abaAtiva === 'produtos' ? '#10B981' : '#334155'
-        }}
-        onPress={() => setAbaAtiva('produtos')}
-      >
-        <Text style={{ color: abaAtiva === 'produtos' ? '#FFFFFF' : '#94A3B8', fontWeight: '600' }}>
-          Novo Produto
-        </Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity
-        style={{
-          paddingVertical: 10, paddingHorizontal: 20, borderRadius: 6,
-          backgroundColor: abaAtiva === 'setores' ? '#10B981' : 'transparent',
-          borderWidth: 1, borderColor: abaAtiva === 'setores' ? '#10B981' : '#334155'
-        }}
-        onPress={() => setAbaAtiva('setores')}
-      >
-        <Text style={{ color: abaAtiva === 'setores' ? '#FFFFFF' : '#94A3B8', fontWeight: '600' }}>
-          Novo Setor
-        </Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</View>
+            {/* SELETOR DE ABAS */}
+            <View style={styles.tabsRow}>
+              <TouchableOpacity
+                style={[styles.tabButton, abaAtiva === 'produtos' && styles.tabButtonActive]}
+                onPress={() => setAbaAtiva('produtos')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.tabButtonText, abaAtiva === 'produtos' && styles.tabButtonTextActive]}>
+                  Novo Produto
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.tabButton, abaAtiva === 'setores' && styles.tabButtonActive]}
+                onPress={() => setAbaAtiva('setores')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.tabButtonText, abaAtiva === 'setores' && styles.tabButtonTextActive]}>
+                  Novo Setor
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
 
         {/* INDICADORES DE DESEMPENHO */}
         <View style={styles.metricsGrid}>
@@ -301,46 +329,53 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
           <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
         </View>
 
-        {/* WORKSPACE DIVIDIDO (FORMULÁRIO ALTERNÁVEL + INVENTÁRIO) */}
-        <View style={styles.workspace}>
-          {abaAtiva === 'produtos' ? (
-            <ProductForm
-              form={formProduto}
-              setFormValue={setProductFormValue}
-              imagem={imagem}
-              onSelecionarImagem={handleSelecionarImagem}
-              onSubmit={handleCadastrarProduto}
-              salvando={salvando}
-              listaSetores={listaSetores} // <-- PASSA A LISTA DE SETORES CARREGADA AQUI!
-            />
-          ) : (
-            <SectorForm
-              form={formSetor}
-              setFormValue={setSectorFormValue}
-              onSubmit={handleCadastrarSetor}
-              salvando={salvando}
-            />
-        )}
+        {/* WORKSPACE DIVIDIDO */}
+        <View style={styles.workspaceWrap}>
+          <View style={styles.formColumn}>
+            {abaAtiva === 'produtos' ? (
+              <ProductForm
+                form={formProduto}
+                setFormValue={setProductFormValue}
+                imagem={imagem}
+                onSelecionarImagem={handleSelecionarImagem}
+                onSubmit={handleCadastrarProduto}
+                salvando={salvando}
+                listaSetores={listaSetores}
+              />
+            ) : (
+              <SectorForm
+                form={formSetor}
+                setFormValue={setSectorFormValue}
+                onSubmit={handleCadastrarSetor}
+                salvando={salvando}
+              />
+            )}
+          </View>
 
-          <InventorySection
-            grupos={gruposPorSetor}
-            setores={setores}
-            setorSelecionado={setorSelecionado}
-            onSelecionarSetor={setSetorSelecionado}
-            loading={loading}
-            totalItens={itens.length}
-            baseUrl={BASE_URL}
-            onOpenItem={setItemSelecionado}
-          />
+          <View style={styles.listColumn}>
+            <InventorySection
+              grupos={gruposPorSetor}
+              setores={setores}
+              setorSelecionado={setorSelecionado}
+              onSelecionarSetor={setSetorSelecionado}
+              loading={loading}
+              totalItens={itens.length}
+              baseUrl={BASE_URL}
+              onOpenItem={setItemSelecionado}
+            />
+          </View>
         </View>
       </ScrollView>
 
-      {/* MODAL DETALHADO DE PRODUTOS */}
+      {/* MODAL DETALHADO CONECTADO ÀS OPERAÇÕES */}
       <ProductDetailModal
         item={itemSelecionado}
         visible={Boolean(itemSelecionado)}
         baseUrl={BASE_URL}
         onClose={() => setItemSelecionado(null)}
+        onExcluir={handleExcluirProduto}
+        onAtualizar={handleAtualizarProduto}
+        listaSetores={listaSetores}
       />
     </SafeAreaView>
   );

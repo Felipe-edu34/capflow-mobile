@@ -43,6 +43,24 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   heroCopy: { flex: 1, minWidth: 260 },
+
+  // Tabs do hero
+  tabsRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginTop: 6 },
+  tabButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#334155',
+    backgroundColor: 'transparent',
+  },
+  tabButtonActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  tabButtonText: { color: '#94A3B8', fontWeight: '700' },
+  tabButtonTextActive: { color: '#FFFFFF' },
+
   statusPill: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -86,7 +104,14 @@ const styles = StyleSheet.create({
   metricValue: { color: '#0F172A', fontSize: 28, fontWeight: '900', marginTop: 8 },
   metricDanger: { color: '#DC2626' },
   metricHint: { color: '#7C8DA0', fontSize: 12, marginTop: 5, fontWeight: '700' },
+  // Layout do painel (mais previsível em telas diferentes)
+  workspaceWrap: { flexDirection: 'row', gap: 18, alignItems: 'flex-start' },
+  formColumn: { flex: 1, minWidth: 320, maxWidth: 420 },
+  listColumn: { flex: 2, minWidth: 360 },
+
+  // Mantido por compatibilidade (se algum outro componente usar)
   workspace: { flexDirection: 'row', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' },
+
   formPanel: {
     flex: 1,
     minWidth: 320,
