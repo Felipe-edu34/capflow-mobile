@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, ScrollView, Text, TouchableOpacity, View, Modal } from 'react-native';
 import axios from 'axios';
 
 // Importando os componentes modulares do gerente
@@ -7,12 +7,10 @@ import InventorySection from '../components/manager/InventorySection';
 import MetricCard from '../components/manager/MetricCard';
 import ProductDetailModal from '../components/manager/ProductDetailModal';
 import MovementHistory from '../components/manager/MovementHistory';
-import ProductForm from '../components/manager/ProductForm';
 import SectorForm from '../components/manager/SectorForm';
-import ManagerCharts from '../components/manager/ManagerCharts'; // <--- GRAFICOS IMPORTADOS REINTEGRADOS
+import ManagerCharts from '../components/manager/ManagerCharts'; 
 import ProductFormModal from '../components/manager/ProductFormModal';
 import modernStyles from '../components/manager/modernStyles';
-import styles from '../components/manager/managerStyles';
 
 const API_URL = 'http://127.0.0.1:8000/api';
 const BASE_URL = 'http://127.0.0.1:8000';
@@ -42,7 +40,6 @@ function getSetorNome(item) {
 }
 
 export default function ManagerDashboard({ perfil, token, handleLogout }) {
-  // 1. ESTADOS DO DASHBOARD (Aba padrão alterada para 'dashboard' para abrir nos gráficos)
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
   const [itens, setItens] = useState([]);
   const [sidebarAberta, setSidebarAberta] = useState(true);
@@ -59,8 +56,10 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [ordenacao, setOrdenacao] = useState('alfabetica');
   const [modalProdutoVisivel, setModalProdutoVisivel] = useState(false);
+  
+  const [modalAlertasVisivel, setModalAlertasVisivel] = useState(false);
+  const [alertaVisualizado, setAlertaVisualizado] = useState(false);
 
-  // 2. BUSCA DE DADOS CONECTADA AO DJANGO (Mantida idêntica à sua)
   const carregarItens = async () => {
     try {
       const response = await axios.get(`${API_URL}/itens/`, {
@@ -104,11 +103,11 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   }, [token]);
 
-  // 3. INTELIGÊNCIA DE INVENTÁRIO (Mantido useMemo original intacto)
-  const { indicadores, gruposPorSetor, setores } = useMemo(() => {
+  const { indicadores, gruposPorSetor, setores, listaItensCriticos } = useMemo(() => {
     const mapaSetores = new Map();
     let volume = 0;
     let itensCriticos = 0;
+    const criticosArr = [];
 
     const itensFiltrados = itens.filter((item) => {
       if (!busca.trim()) return true;
@@ -121,7 +120,11 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       const estoqueBaixo = Number(item.quantidade_atual) <= Number(item.estoque_minimo);
 
       volume += Number(item.quantidade_atual || 0);
-      if (estoqueBaixo) itensCriticos += 1;
+      
+      if (estoqueBaixo) {
+        itensCriticos += 1;
+        criticosArr.push(item);
+      }
 
       if (!mapaSetores.has(key)) {
         mapaSetores.set(key, { key, nome, itens: [], criticos: 0 });
@@ -158,8 +161,16 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       },
       gruposPorSetor: grupos,
       setores: grupos.map(({ key, nome }) => ({ key, nome })),
+      listaItensCriticos: criticosArr,
     };
   }, [itens, busca, ordenacao]);
+
+  useEffect(() => {
+    if (!loading && listaItensCriticos.length > 0 && !alertaVisualizado) {
+      setModalAlertasVisivel(true);
+      setAlertaVisualizado(true);
+    }
+  }, [loading, listaItensCriticos, alertaVisualizado]);
 
   const setProductFormValue = (field, value) => {
     setFormProduto((current) => ({ ...current, [field]: value }));
@@ -174,7 +185,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     if (arquivo) setImagem(arquivo);
   };
 
-  // --- FUNÇÕES OPERACIONAIS ORIGINAIS ---
   const handleCadastrarProduto = async () => {
     const camposFaltando = [];
     if (!formProduto.nome?.trim()) camposFaltando.push('Nome do produto');
@@ -290,35 +300,48 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerBrand}>
-          <View style={styles.brandMark}>
-            <Text style={styles.brandMarkText}>CF</Text>
+    <SafeAreaView style={modernStyles.container}>
+      <View style={modernStyles.header}>
+        <View style={modernStyles.headerBrand}>
+          <View style={modernStyles.brandMark}>
+            <Text style={modernStyles.brandMarkText}>CF</Text>
           </View>
           <View>
-            <Text style={styles.headerTitle}>CapFlow</Text>
-            <Text style={styles.headerSubtitle}>Control Tower</Text>
+            <Text style={modernStyles.headerTitle}>CapFlow</Text>
+            <Text style={modernStyles.headerSubtitle}>Control Tower</Text>
           </View>
         </View>
-        <View style={styles.badgeStatus}>
-          <Text style={styles.badgeStatusText}>Painel Corporativo</Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {listaItensCriticos.length > 0 && (
+            <TouchableOpacity 
+              onPress={() => setModalAlertasVisivel(true)}
+              style={{ backgroundColor: '#FEF2F2', borderColor: '#FCA5A5', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' }} />
+              <Text style={{ color: '#991B1B', fontSize: 12, fontWeight: '700' }}>
+                {listaItensCriticos.length} Alertas
+              </Text>
+            </TouchableOpacity>
+          )}
+          <View style={modernStyles.badgeStatus}>
+            <Text style={modernStyles.badgeStatusText}>Painel Corporativo</Text>
+          </View>
         </View>
       </View>
 
       <View style={{ flex: 1, flexDirection: 'row' }}>
       
-        {/* MENU LATERAL INCLUINDO A OPÇÃO 'VISÃO GERAL' */}
         {sidebarAberta && (
-          <View style={styles.sidebar}>
-            <View style={styles.sidebarSection}>
+          <View style={modernStyles.sidebar}>
+            <View style={modernStyles.sidebarSection}>
               <Text style={{ color: '#94A3B8', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>
                 Módulos do Sistema
               </Text>
 
               {[
                 { id: 'dashboard', label: 'Visão Geral', desc: 'Métricas e Gráficos' },
-                { id: 'produtos', label: 'Novo Produto', desc: 'Gestão de estoque' },
+                { id: 'produtos', label: 'Inventário', desc: 'Gestão de estoque' },
                 { id: 'setores', label: 'Novo Setor', desc: 'Mapear armazéns' },
                 { id: 'movimentacoes', label: 'Movimentações', desc: 'Histórico de auditoria' },
               ].map((item) => {
@@ -328,51 +351,69 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
                     key={item.id}
                     onPress={() => setAbaAtiva(item.id)}
                     style={[
-                      styles.sidebarItem,
-                      ativo && styles.sidebarItemActive,
+                      modernStyles.sidebarItem,
+                      ativo && modernStyles.sidebarItemActive,
                     ]}
                   >
-                    <Text style={[styles.sidebarItemTitle, ativo && { color: '#FFFFFF' }]}>{item.label}</Text>
-                    <Text style={[styles.sidebarItemDesc, ativo && { color: '#9FC5F8' }]}>{item.desc}</Text>
+                    <Text style={[modernStyles.sidebarItemTitle, ativo && { color: '#FFFFFF' }]}>{item.label}</Text>
+                    <Text style={[modernStyles.sidebarItemDesc, ativo && { color: '#9FC5F8' }]}>{item.desc}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <View style={styles.sidebarProfile}>
-              <Text style={styles.sidebarUsername} numberOfLines={1}>
+            <View style={modernStyles.sidebarProfile}>
+              <Text style={modernStyles.sidebarUsername} numberOfLines={1}>
                 {perfil?.username || 'Carregando...'}
               </Text>
-              <Text style={styles.sidebarCompany} numberOfLines={1}>
+              <Text style={modernStyles.sidebarCompany} numberOfLines={1}>
                 {perfil?.empresa || 'Corporativo'}
               </Text>
-              <TouchableOpacity onPress={handleLogout} style={styles.sidebarLogout}>
-                <Text style={styles.sidebarLogoutText}>Sair da Conta</Text>
+              <TouchableOpacity onPress={handleLogout} style={modernStyles.sidebarLogout}>
+                <Text style={modernStyles.sidebarLogoutText}>Sair da Conta</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* ÁREA DE CONTEÚDO PRINCIPAL */}
         <View style={{ flex: 1, flexDirection: 'column' }}>
           
-          <View style={styles.topBar}>
+          <View style={modernStyles.topBar}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              <TouchableOpacity onPress={() => setSidebarAberta(!sidebarAberta)} style={styles.toggleButton}>
-                <Text style={styles.toggleButtonText}>{sidebarAberta ? '✕' : '☰'}</Text>
+              <TouchableOpacity onPress={() => setSidebarAberta(!sidebarAberta)} style={modernStyles.toggleButton}>
+                <Text style={modernStyles.toggleButtonText}>{sidebarAberta ? '✕' : '☰'}</Text>
               </TouchableOpacity>
-              <Text style={styles.pageHeading}>
+              <Text style={modernStyles.pageHeading}>
                 Painel Geral / {abaAtiva === 'dashboard' ? 'Visão Geral' : abaAtiva}
               </Text>
             </View>
-            <View style={styles.badgeStatus}>
-              <Text style={styles.badgeStatusText}>Gestor Ativo</Text>
+            <View style={modernStyles.badgeStatus}>
+              <Text style={modernStyles.badgeStatusText}>Gestor Ativo</Text>
             </View>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            {/* INDICADORES DE DESEMPENHO REAL-TIME */}
-            <View style={[styles.metricsGrid, { marginBottom: 24 }]}>
+          <ScrollView contentContainerStyle={modernStyles.scrollContent}>
+            
+            {listaItensCriticos.length > 0 && abaAtiva === 'dashboard' && (
+              <View style={{ backgroundColor: '#FEF2F2', borderColor: '#FEE2E2', borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1, marginRight: 16 }}>
+                  <Text style={{ color: '#991B1B', fontWeight: '700', fontSize: 14, marginBottom: 2 }}>
+                    Ruptura Iminente de Estoque
+                  </Text>
+                  <Text style={{ color: '#7F1D1D', fontSize: 13, opacity: 0.9 }}>
+                    Há {listaItensCriticos.length} produtos operando abaixo do limite mínimo de segurança configurado.
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setModalAlertasVisivel(true)}
+                  style={{ backgroundColor: '#EF4444', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6 }}
+                >
+                  <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>Ver Itens</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={[modernStyles.metricsGrid, { marginBottom: 24 }]}>
               <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens no catálogo" />
               <MetricCard
                 label="Críticos"
@@ -384,70 +425,108 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
               <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
             </View>
 
-            {/* CONDICIONAL INTELIGENTE PARA A RENDERIZAÇÃO */}
-            {abaAtiva === 'dashboard' ? (
-              /* SE A ABA FOR 'DASHBOARD' EXIBE SÓ OS GRAFICOS CORPORATIVOS */
-              <View style={{ width: '100%', marginTop: 8 }}>
+            {/* AQUI ESTÁ A LÓGICA CORRIGIDA DAS ABAS */}
+            <View style={{ width: '100%', marginTop: 8 }}>
+              
+              {abaAtiva === 'dashboard' && (
                 <ManagerCharts gruposPorSetor={gruposPorSetor} itens={itens} />
-              </View>
-            ) : (
-              /* CASO CONTRÁRIO, EXIBE O SEU LAYOUT DE DUAS COLUNAS ORIGINAL COM OS FORMULÁRIOS */
-              <View style={styles.workspaceWrap}>
+              )}
 
-                <View style={styles.formColumn}>
-                  {abaAtiva === 'produtos' ? (
-                    <View style={[styles.listPanel, { padding: 16, backgroundColor: '#0F172A', borderColor: 'rgba(100, 200, 255, 0.2)', alignItems: 'center', justifyContent: 'center', minHeight: 120 }]}>                        
-                        <TouchableOpacity
-                          style={modernStyles.btnNovoInlineSmall}
-                          onPress={() => setModalProdutoVisivel(true)}
-                        >
-                          <Text style={modernStyles.btnNovoInlineText}>+ Novo Produto</Text>
-                        </TouchableOpacity>
-                      </View>
-                  ) : abaAtiva === 'setores' ? (
-                    <SectorForm
-                      form={formSetor}
-                      setFormValue={setSectorFormValue}
-                      onSubmit={handleCadastrarSetor}
-                      salvando={salvando}
-                    />
-                  ) : (
-                    <View style={[styles.listPanel, { padding: 20 }]}>
-                      <Text style={styles.sectionTitle}>Painel de Auditoria</Text>
-                      <Text style={styles.sectionEyebrow}>O histórico completo de entradas e saídas automáticas geradas pelo painel está listado ao lado.</Text>
-                    </View>
-                  )}
+              {abaAtiva === 'produtos' && (
+                <InventorySection
+                  grupos={gruposPorSetor}
+                  setores={setores}
+                  setorSelecionado={setorSelecionado}
+                  onSelecionarSetor={setSetorSelecionado}
+                  busca={busca}
+                  onBuscaChange={setBusca}
+                  loading={loading}
+                  totalItens={indicadores.totalItens}
+                  baseUrl={BASE_URL}
+                  onOpenItem={setItemSelecionado}
+                  ordenacao={ordenacao}
+                  onOrdenacaoChange={setOrdenacao}
+                  onNovoProduto={() => setModalProdutoVisivel(true)}
+                />
+              )}
+
+              {abaAtiva === 'setores' && (
+                <View style={{ width: '100%', maxWidth: 600, alignSelf: 'center' }}>
+                  <SectorForm
+                    form={formSetor}
+                    setFormValue={setSectorFormValue}
+                    onSubmit={handleCadastrarSetor}
+                    salvando={salvando}
+                  />
                 </View>
+              )}
 
-                <View style={styles.listColumn}>
-                  {abaAtiva === 'movimentacoes' ? (
-                    <MovementHistory movimentacoes={movimentacoes} />
-                  ) : (
-                    <InventorySection
-                      grupos={gruposPorSetor}
-                      setores={setores}
-                      setorSelecionado={setorSelecionado}
-                      onSelecionarSetor={setSetorSelecionado}
-                      busca={busca}
-                      onBuscaChange={setBusca}
-                      loading={loading}
-                      totalItens={itens.length}
-                      baseUrl={BASE_URL}
-                      onOpenItem={setItemSelecionado}
-                      ordenacao={ordenacao}
-                      onOrdenacaoChange={setOrdenacao}
-                    />
-                  )}
-                </View>
+              {abaAtiva === 'movimentacoes' && (
+                <MovementHistory movimentacoes={movimentacoes} />
+              )}
 
-              </View>
-            )}
+            </View>
+
           </ScrollView>
         </View>
 
       </View>
 
-      {/* MODAL DE FORMULÁRIO MODERNO */}
+      <Modal
+        visible={modalAlertasVisivel}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalAlertasVisivel(false)}
+      >
+        <View style={modernStyles.modalOverlay}>
+          <View style={[modernStyles.modalContainer, { maxWidth: 550 }]}>
+            <View style={modernStyles.modalHeader}>
+              <View>
+                <Text style={modernStyles.modalTitle}>⚠️ Reposição de Estoque Urgente</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Itens que cruzaram a linha do estoque mínimo.</Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => setModalAlertasVisivel(false)}
+                style={modernStyles.modalCloseBtn}
+              >
+                <Text style={modernStyles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 350, padding: 20 }}>
+              {listaItensCriticos.map((item) => (
+                <View 
+                  key={item.id || item.nome}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, backgroundColor: '#FFF5F5', borderRadius: 8, borderWidth: 1, borderColor: '#FEE2E2', marginBottom: 8 }}
+                >
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#1E293B' }}>{item.nome}</Text>
+                    <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>Setor: {getSetorNome(item)}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#EF4444' }}>
+                      {item.quantidade_atual} {item.unidade_medida || 'UN'}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>
+                      Mínimo: {item.estoque_minimo}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={{ padding: 20, borderTopWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', justifyContent: 'flex-end' }}>
+              <TouchableOpacity
+                onPress={() => setModalAlertasVisivel(false)}
+                style={{ backgroundColor: '#0F172A', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 }}
+              >
+                <Text style={{ color: '#FFF', fontWeight: '600', fontSize: 13 }}>Fechar Relatório</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <ProductFormModal
         visible={modalProdutoVisivel}
         onClose={() => {
@@ -464,7 +543,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         listaSetores={listaSetores}
       />
 
-      {/* MODAL DETALHADO COMPATIVEL COM OS DOIS MODOS */}
       <ProductDetailModal
         item={itemSelecionado}
         visible={Boolean(itemSelecionado)}

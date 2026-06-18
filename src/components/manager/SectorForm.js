@@ -1,47 +1,48 @@
 import React from 'react';
-import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import styles from './managerStyles'; // Reutilizando seus estilos
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import modernStyles from './modernStyles'; 
 
-export default function SectorForm({
-  form,
-  setFormValue,
-  onSubmit,
-  salvando,
-}) {
+export default function SectorForm({ form, setFormValue, onSubmit, salvando }) {
   return (
-    <View style={styles.formPanel}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionEyebrow}>Configuração</Text>
-        <Text style={styles.sectionTitle}>Novo Setor</Text>
-        <Text style={styles.sectionSubtitle}>Crie áreas operacionais para agrupar e organizar seus estoques.</Text>
+    <View style={modernStyles.formCard}>
+      <Text style={modernStyles.formEyebrow}>Configuração</Text>
+      <Text style={modernStyles.formTitle}>Novo Setor</Text>
+      <Text style={modernStyles.formDescription}>
+        Crie áreas operacionais para agrupar e organizar seus estoques.
+      </Text>
+
+      <View style={modernStyles.inputGroup}>
+        <Text style={modernStyles.label}>Nome do setor</Text>
+        <TextInput
+          style={modernStyles.formInput}
+          placeholder="Ex: Almoxarifado Central"
+          placeholderTextColor="#94A3B8"
+          value={form.nome}
+          onChangeText={(text) => setFormValue('nome', text)}
+        />
       </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nome do setor (ex: Almoxarifado)"
-        placeholderTextColor="#8A97A8"
-        value={form.nome}
-        onChangeText={(value) => setFormValue('nome', value)}
-      />
+      <View style={modernStyles.inputGroup}>
+        <Text style={modernStyles.label}>ID do Responsável (Opcional)</Text>
+        <TextInput
+          style={modernStyles.formInput}
+          placeholder="Ex: 12"
+          placeholderTextColor="#94A3B8"
+          value={form.responsavelId}
+          onChangeText={(text) => setFormValue('responsavelId', text)}
+          keyboardType="numeric"
+        />
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="ID do funcionário responsável (opcional)"
-        placeholderTextColor="#8A97A8"
-        keyboardType="numeric"
-        value={form.responsavelId}
-        onChangeText={(value) => setFormValue('responsavelId', value)}
-      />
-
-      <TouchableOpacity 
-        style={[styles.btnSalvar, { marginTop: 10 }]} 
-        onPress={onSubmit} 
+      <TouchableOpacity
+        style={[modernStyles.primaryButton, salvando && modernStyles.btnSubmitLoading]}
+        onPress={onSubmit}
         disabled={salvando}
       >
         {salvando ? (
-          <ActivityIndicator color="#06111F" />
+          <ActivityIndicator color="#FFF" />
         ) : (
-          <Text style={styles.btnSalvarText}>Criar Setor</Text>
+          <Text style={modernStyles.primaryButtonText}>Criar Setor</Text>
         )}
       </TouchableOpacity>
     </View>

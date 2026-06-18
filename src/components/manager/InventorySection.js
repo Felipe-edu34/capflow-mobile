@@ -1,6 +1,6 @@
-import React, { useState } from 'react'; // Adicionado o useState aqui para controlar a abertura
+import React, { useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import styles from './managerStyles';
+import styles from './modernStyles'; 
 
 function ProductCard({ item, baseUrl, onPress }) {
   const estoqueBaixo = Number(item.quantidade_atual) <= Number(item.estoque_minimo);
@@ -11,12 +11,11 @@ function ProductCard({ item, baseUrl, onPress }) {
       style={[
         styles.productCard, 
         estoqueBaixo && styles.productCardAlert,
-        // Engenharia de UI: Injeção de Alerta Enterprise se o estoque for baixo
         estoqueBaixo && {
           borderLeftWidth: 5,
-          borderLeftColor: '#EF4444',     // Borda lateral vermelha viva
-          backgroundColor: '#FEF2F2',    // Fundo vermelho extremamente suave
-          borderColor: '#FCA5A5',        // Borda externa levemente avermelhada
+          borderLeftColor: '#EF4444',
+          backgroundColor: '#FEF2F2',
+          borderColor: '#FCA5A5',
         }
       ]}
       onPress={() => onPress(item)}
@@ -59,7 +58,6 @@ function ProductCard({ item, baseUrl, onPress }) {
       </View>
 
       <View style={styles.productStock}>
-        {/* O número da quantidade fica vermelho escuro e em negrito pesado se estiver crítico */}
         <Text style={[
           styles.stockQty, 
           estoqueBaixo && { color: '#B91C1C', fontWeight: '900' }
@@ -89,15 +87,14 @@ export default function InventorySection({
   baseUrl,
   onOpenItem,
   ordenacao, 
-  onOrdenacaoChange
+  onOrdenacaoChange,
+  onNovoProduto 
 }) {
-  // Estado local para controlar se a gaveta de filtros está aberta ou fechada
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
   const gruposVisiveis =
     setorSelecionado === 'todos' ? grupos : grupos.filter((grupo) => grupo.key === setorSelecionado);
 
-  // Mapeamento de rótulos amigáveis para mostrar qual ordenação está ativa no botão principal
   const labelOrdenacaoAtual = {
     alfabetica: 'Nome (A-Z)',
     maior_estoque: 'Maior Estoque',
@@ -107,18 +104,38 @@ export default function InventorySection({
 
   return (
     <View style={styles.listPanel}>
-      {/* CABEÇALHO DO INVENTÁRIO */}
+      
       <View style={styles.listHeader}>
         <View>
           <Text style={styles.sectionEyebrow}>Inventário</Text>
           <Text style={styles.sectionTitle}>Produtos por setor</Text>
         </View>
-        <View style={styles.countBadge}>
-          <Text style={styles.countBadgeText}>{totalItens} itens</Text>
+        
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity 
+            style={{
+              backgroundColor: '#0EA5E9',
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 10,
+              shadowColor: '#0EA5E9',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              elevation: 4
+            }}
+            onPress={onNovoProduto}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>+ Novo Produto</Text>
+          </TouchableOpacity>
+
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{totalItens} itens</Text>
+          </View>
         </View>
       </View>
 
-      {/* LINHA DE BUSCA COM BOTÃO INTELIGENTE DE FILTROS */}
       <View style={styles.filterRow}>
         <View style={{ flex: 1 }}>
           <TextInput
@@ -203,7 +220,6 @@ export default function InventorySection({
         </View>
       ) : (
         <>
-          {/* SELEÇÃO DE ABAS DE SETORES */}
           <View style={styles.sectorTabs}>
             <TouchableOpacity
               style={[styles.sectorTab, setorSelecionado === 'todos' && styles.sectorTabActive]}
@@ -227,7 +243,6 @@ export default function InventorySection({
             ))}
           </View>
 
-          {/* RENDERIZAÇÃO DOS BLOCOS DE SETOR */}
           {gruposVisiveis.map((grupo) => (
             <View key={grupo.key} style={styles.sectorBlock}>
               <View style={styles.sectorHeader}>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import styles from './managerStyles';
+import styles from './modernStyles';
 
 export default function MetricCard({ label, value, hint, danger }) {
   return (

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList } from 'react-native';
-import styles from './managerStyles';
+import styles from './modernStyles';
 
 export default function MovementHistory({ movimentacoes }) {
   return (

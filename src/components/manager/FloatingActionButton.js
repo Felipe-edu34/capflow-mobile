@@ -7,9 +7,11 @@ export default function FloatingActionButton({ onPress }) {
 
   return (
     <View style={modernStyles.btnNovoContainer}>
-      <View style={showLabel ? {} : { display: 'none' }}>
+      {/* Engenharia de UI: Renderização limpa do Tooltip (Ativada via Hover na Web) */}
+      {showLabel && (
         <Text style={modernStyles.btnNovoProdutoLabel}>Novo Produto</Text>
-      </View>
+      )}
+
       <TouchableOpacity
         style={modernStyles.btnNovoProduto}
         onPress={onPress}
