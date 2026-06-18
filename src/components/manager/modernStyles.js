@@ -1,317 +1,663 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 const modernStyles = StyleSheet.create({
-  // ============ MODAL BACKDROP ============
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    backdropFilter: 'blur(2px)',
-    WebkitBackdropFilter: 'blur(2px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
-
-  // ============ MODAL CONTAINER ============
-  modalContainer: {
-    width: '85%',
-    maxWidth: 420,
-    backgroundColor: '#1A2332',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#2D3E52',
-    overflow: 'hidden',
-    shadowColor: '#0088CC',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 15,
-    maxHeight: '70%',
-  },
-
-  // ============ MODAL HEADER ============
-  modalHeader: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2D3E52',
+  // =========================================================================
+  // 1. CONTAINER PRINCIPAL, HEADER E SIDEBAR (ESTRUTURA BASE DO SISTEMA)
+  // =========================================================================
+  container: { flex: 1, backgroundColor: '#F4F7FB' },
+  header: {
+    backgroundColor: '#0E1724',
+    paddingHorizontal: 22,
+    paddingVertical: 18,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#162335',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 8,
   },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0088CC',
-    letterSpacing: 0.3,
-  },
-
-  modalCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 136, 204, 0.1)',
-    borderWidth: 1,
-    borderColor: '#2D3E52',
-    justifyContent: 'center',
-    alignItems: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-  },
-
-  modalCloseText: {
-    fontSize: 18,
-    color: '#0088CC',
-    fontWeight: '600',
-  },
-
-  // ============ MODAL BODY ============
-  modalBody: {
-    padding: 20,
-    maxHeight: 'calc(70vh - 60px)',
-    overflowY: 'auto',
-  },
-
-  // ============ BUTTON STYLES ============
-  btnNovoContainer: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    zIndex: 100,
-  },
-
-  btnNovoProduto: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(0, 217, 255, 0.15)',
-    borderWidth: 2,
-    borderColor: '#00D9FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#00D9FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 15,
-    transition: 'all 0.3s ease',
-  },
-
-  btnNovoProdutoText: {
-    fontSize: 32,
-    color: '#00D9FF',
-    fontWeight: '700',
-  },
-
-  btnNovoProdutoLabel: {
-    position: 'absolute',
-    top: -40,
-    whiteSpace: 'nowrap',
-    backgroundColor: 'rgba(0, 217, 255, 0.15)',
-    color: '#00D9FF',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: '700',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 217, 255, 0.3)',
-  },
-
-  // ============ FORM INPUTS (Dark Mode with Neon) ============
-  formLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0088CC',
-    marginBottom: 6,
-    marginTop: 12,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-
-  formInput: {
-    backgroundColor: '#0F1619',
-    borderWidth: 1,
-    borderColor: '#2D3E52',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#B8C5D6',
-    fontSize: 13,
-    fontWeight: '500',
-    marginBottom: 10,
-    transition: 'all 0.3s ease',
-  },
-
-  formInputFocus: {
-    borderColor: '#0088CC',
-    backgroundColor: '#162335',
-    boxShadow: '0 0 10px rgba(0, 136, 204, 0.15)',
-  },
-
-  formInputError: {
-    borderColor: '#E74C3C',
-    backgroundColor: 'rgba(231, 76, 60, 0.05)',
-  },
-
-  formInputPlaceholder: {
-    color: 'rgba(184, 197, 214, 0.4)',
-  },
-
-  formError: {
-    color: '#E74C3C',
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 2,
-    marginBottom: 8,
-    letterSpacing: 0.2,
-  },
-
-  // ============ SELECT STYLES ============
-  formSelect: {
-    width: '100%',
-    backgroundColor: '#0F1619',
-    borderWidth: 1,
-    borderColor: '#2D3E52',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#B8C5D6',
-    fontSize: 13,
-    fontWeight: '500',
-    marginBottom: 10,
-    transition: 'all 0.3s ease',
-    outline: 'none',
-  },
-
-  // ============ SUBMIT BUTTON ============
-  btnSubmit: {
-    marginTop: 16,
-    paddingVertical: 11,
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#0088CC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.3s ease',
-    cursor: 'pointer',
-    flexDirection: 'row',
-    gap: 8,
-  },
-
-  btnSubmitText: {
-    color: '#0088CC',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-
-  btnSubmitLoading: {
-    opacity: 0.6,
-    borderColor: 'rgba(0, 136, 204, 0.5)',
-  },
-
-  // ============ UTILITY STYLES ============
-  textSecondary: {
-    color: 'rgba(224, 242, 254, 0.7)',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  inputRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 4,
-  },
-
-  inputColumn: {
-    flex: 1,
-  },
-
-  // ============ SPINNER ============
-  spinner: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: 'rgba(0, 217, 255, 0.3)',
-    borderTopColor: '#00D9FF',
-    animation: 'spin 1s linear infinite',
-  },
-
-  // ============ NEON GLITCH EFFECT ============
-  neonGlitch: {
-    textShadow: '0 0 10px rgba(0, 217, 255, 0.5)',
-  },
-
-  // ============ IMAGE UPLOAD BOX ============
-  imageUploadBox: {
-    backgroundColor: '#0F1619',
-    borderWidth: 1,
-    borderColor: '#2D3E52',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    transition: 'all 0.3s ease',
-  },
-
-  imageUploadText: {
-    color: '#0088CC',
-    fontSize: 13,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-
-  // ============ BUTTON STYLES FOR INLINE ============
-  btnNovoInline: {
-    width: '100%',
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#0EA5E9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: '#0E7490',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 6,
-    transition: 'all 0.3s ease',
-  },
-
-  btnNovoInlineSmall: {
-    width: 180,
-    paddingVertical: 12,
+  headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  brandMark: {
+    width: 42,
+    height: 42,
     borderRadius: 12,
     backgroundColor: '#0EA5E9',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0E7490',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+  },
+  brandMarkText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
+  brandCopy: { flex: 1 },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: '#FFFFFF' },
+  headerSubtitle: { fontSize: 13, color: '#9FB0C3', marginTop: 2 },
+  logoutButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.24)',
+  },
+  logoutText: { color: '#FEE2E2', fontWeight: '900', fontSize: 13 },
+  topBar: {
+    height: 70,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pageHeading: { fontSize: 16, fontWeight: '900', color: '#0F172A', textTransform: 'capitalize' },
+  badgeStatus: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  badgeStatusText: { color: '#0369A1', fontSize: 12, fontWeight: '700' },
+  sidebar: {
+    width: 280,
+    backgroundColor: '#07111F',
+    padding: 22,
+    justifyContent: 'space-between',
+    borderRightWidth: 1,
+    borderColor: '#11243C',
+  },
+  sidebarSection: { flex: 1, gap: 8 },
+  sidebarItem: { paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16 },
+  sidebarItemActive: { backgroundColor: '#0E1724', borderLeftWidth: 4, borderLeftColor: '#0EA5E9' },
+  sidebarItemTitle: { color: '#F8FAFC', fontSize: 14, fontWeight: '700' },
+  sidebarItemDesc: { color: '#94A3B8', fontSize: 12, marginTop: 4 },
+  sidebarProfile: { paddingTop: 20, borderTopWidth: 1, borderColor: '#11243C' },
+  sidebarUsername: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  sidebarCompany: { color: '#94A3B8', fontSize: 12, marginTop: 6 },
+  sidebarLogout: { backgroundColor: '#EF4444', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginTop: 12 },
+  sidebarLogoutText: { color: '#FFFFFF', fontWeight: '800' },
+  toggleButton: { padding: 10, borderRadius: 10, backgroundColor: '#F1F5F9' },
+  toggleButtonText: { fontSize: 18, fontWeight: '800', color: '#475569' },
+  scrollContent: { padding: 24, gap: 20 },
+
+  // =========================================================================
+  // 2. HERO COMPONENT, PAINÉIS DE GRÁFICOS E METRICAS
+  // =========================================================================
+  hero: {
+    backgroundColor: '#0F172A',
+    borderRadius: 18,
+    padding: 24,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'stretch',
+    gap: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  heroCopy: { flex: 1, minWidth: 260 },
+  statusPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(94, 234, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(94, 234, 212, 0.22)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginBottom: 18,
+  },
+  statusDot: { width: 8, height: 8, borderRadius: 8, backgroundColor: '#5EEAD4' },
+  statusText: { color: '#A7F3D0', fontSize: 12, fontWeight: '900' },
+  heroTitle: { color: '#FFFFFF', fontSize: 32, lineHeight: 38, fontWeight: '900', maxWidth: 620 },
+  heroText: { color: '#B6C4D5', fontSize: 15, lineHeight: 22, marginTop: 10, maxWidth: 650 },
+  metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  metricCard: {
+    flex: 1,
+    minWidth: 160,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: '#E8EDF3',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
     elevation: 6,
-    transition: 'all 0.3s ease',
+  },
+  metricLabel: { color: '#64748B', fontSize: 12, fontWeight: '900', textTransform: 'uppercase' },
+  metricValue: { color: '#0F172A', fontSize: 28, fontWeight: '900', marginTop: 8 },
+  metricDanger: { color: '#DC2626' },
+  
+  // LISTAGENS DE ESTOQUE
+  productCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5EBF2',
+    padding: 16,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+  },
+  productName: { color: '#0F172A', fontSize: 15, fontWeight: '900', flex: 1 },
+  stockQty: { color: '#0F172A', fontSize: 22, fontWeight: '900' },
+
+  // =========================================================================
+  // 3. NOVOS ESTILOS DO MODAL CADASTRAL (RESPONSIVO E LIGHT MODE CORRIGIDO)
+  // =========================================================================
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)', // Sombra escura elegante ao redor
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF', // Fundo limpo corporativo
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  modalContainerDesktop: {
+    width: '100%',
+    maxWidth: 520,
+    maxHeight: '85%',
+  },
+  modalContainerMobile: {
+    width: '100%',
+    height: '100%',
+    maxHeight: '95%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    letterSpacing: 0.1,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: 20,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  modalBody: {
+    padding: 24,
+  },
+  formLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 6,
+    marginTop: 14,
+    letterSpacing: 0.1,
+  },
+  formInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'web' ? 12 : 10,
+    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '500',
+    ...Platform.select({
+      web: { outlineStyle: 'none' },
+    }),
+  },
+  formInputFocus: {
+    borderColor: '#0EA5E9', // Foco azul oficial do CapFlow
+    backgroundColor: '#FFFFFF',
+  },
+  formInputError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  formError: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 4,
   },
   
-  btnNovoInlineText: {
+  // DROPDOWN CUSTOMIZADO INTEGRADO
+  dropdownContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    marginTop: 6,
+    maxHeight: 180,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  dropdownItemActive: {
+    backgroundColor: '#F0F7FF',
+  },
+  dropdownItemText: {
+    color: '#334155',
+    fontSize: 14,
+  },
+  dropdownItemTextActive: {
+    color: '#0EA5E9',
+    fontWeight: '600',
+  },
+
+  // SEÇÃO IMAGEM
+  imageUploadBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  imageUploadText: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+
+  // UTILITÁRIOS DE FILAS E RESPONSIVIDADE
+  inputRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  inputRowMobile: {
+    flexDirection: 'column',
+    gap: 0,
+  },
+  inputColumn: {
+    flex: 1,
+  },
+
+  // BOTÕES DE ENVIO DO FORMULÁRIO
+  btnSubmit: {
+    marginTop: 28,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: '#0EA5E9', // Cor oficial sincronizada
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  btnSubmitLoading: {
+    backgroundColor: '#94A3B8',
+  },
+  btnSubmitText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+    textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
+
+  // --- ESTILOS DO INVENTÁRIO (InventorySection) ---
+    listPanel: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 16,
+      padding: 24,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      shadowColor: '#64748B',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      elevation: 2,
+    },
+    listHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 24,
+      flexWrap: 'wrap',
+      gap: 16,
+    },
+    sectionEyebrow: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: '#94A3B8',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    sectionTitle: {
+      fontSize: 22,
+      fontWeight: '900',
+      color: '#0F172A',
+      marginTop: 4,
+    },
+    countBadge: {
+      backgroundColor: '#F1F5F9',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+    },
+    countBadgeText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#475569',
+    },
+    filterRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 20,
+      alignItems: 'center',
+    },
+    filterButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: '#F8FAFC',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      justifyContent: 'center',
+    },
+    filterButtonActive: {
+      backgroundColor: '#E0F2FE',
+      borderColor: '#BAE6FD',
+    },
+    filterButtonText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#64748B',
+    },
+    filterButtonTextActive: {
+      color: '#0284C7',
+    },
+    filterPanel: {
+      backgroundColor: '#F8FAFC',
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+    },
+    sortOption: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: '#CBD5E1',
+    },
+    sortOptionActive: {
+      backgroundColor: '#0F172A',
+      borderColor: '#0F172A',
+    },
+    sortOptionText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#64748B',
+    },
+    sortOptionTextActive: {
+      color: '#FFFFFF',
+    },
+    sectorTabs: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 24,
+      flexWrap: 'wrap',
+    },
+    sectorTab: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: '#F1F5F9',
+    },
+    sectorTabActive: {
+      backgroundColor: '#0EA5E9',
+    },
+    sectorTabText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#64748B',
+    },
+    sectorTabTextActive: {
+      color: '#FFFFFF',
+    },
+    sectorBlock: {
+      marginBottom: 32,
+    },
+    sectorHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      marginBottom: 16,
+      paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderColor: '#F1F5F9',
+    },
+    sectorTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: '#1E293B',
+    },
+    sectorMeta: {
+      fontSize: 13,
+      color: '#94A3B8',
+      marginTop: 2,
+    },
+    sectorCritical: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#EF4444',
+      backgroundColor: '#FEF2F2',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#FCA5A5',
+    },
+    productCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: '#FFFFFF',
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+    },
+    productCardAlert: {
+      borderColor: '#FCA5A5',
+      backgroundColor: '#FEF2F2',
+    },
+    productLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    imageContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 8,
+      backgroundColor: '#F1F5F9',
+      overflow: 'hidden',
+      marginRight: 16,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+    },
+    productImage: {
+      width: '100%',
+      height: '100%',
+    },
+    noImagePlaceholder: {
+      width: '100%',
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    noImageText: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: '#94A3B8',
+    },
+    productInfo: {
+      flex: 1,
+      paddingRight: 16,
+    },
+    productTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    productName: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#0F172A',
+      flexShrink: 1,
+    },
+    productMeta: {
+      fontSize: 12,
+      color: '#64748B',
+      fontWeight: '500',
+    },
+    productStock: {
+      alignItems: 'flex-end',
+    },
+    stockQty: {
+      fontSize: 20,
+      fontWeight: '900',
+      color: '#1E293B',
+    },
+    stockUnit: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#94A3B8',
+      marginTop: 2,
+    },
+    emptyState: {
+      alignItems: 'center',
+      padding: 40,
+      backgroundColor: '#F8FAFC',
+      borderRadius: 12,
+      borderStyle: 'dashed',
+      borderWidth: 2,
+      borderColor: '#E2E8F0',
+    },
+    emptyTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: '#1E293B',
+      marginBottom: 8,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: '#64748B',
+      textAlign: 'center',
+    },
+    loadingState: {
+      alignItems: 'center',
+      padding: 40,
+    },
+    loadingText: {
+      marginTop: 12,
+      fontSize: 14,
+      color: '#64748B',
+      fontWeight: '600',
+    },
+
+  // --- ESTILOS DO FORMULÁRIO (Setor e Produto) ---
+    formCard: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 16,
+      padding: 24,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      marginBottom: 24,
+      flex: 1,
+    },
+    formEyebrow: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: '#94A3B8',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    formTitle: {
+      fontSize: 22,
+      fontWeight: '900',
+      color: '#0F172A',
+      marginTop: 4,
+    },
+    formDescription: {
+      fontSize: 14,
+      color: '#64748B',
+      marginTop: 8,
+      marginBottom: 24,
+    },
+    inputGroup: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#475569',
+      marginBottom: 8,
+      textTransform: 'uppercase',
+    },
+    primaryButton: {
+      backgroundColor: '#0EA5E9',
+      paddingVertical: 14,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+    },
+
 });
 
 export default modernStyles;

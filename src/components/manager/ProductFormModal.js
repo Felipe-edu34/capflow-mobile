@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, Text, TextInput, TouchableOpacity, View, Picker } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { ActivityIndicator, Modal, ScrollView, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
 import modernStyles from './modernStyles';
 
 export default function ProductFormModal({
@@ -15,6 +15,8 @@ export default function ProductFormModal({
 }) {
   const [erros, setErros] = useState({});
   const [focusedField, setFocusedField] = useState(null);
+  const [setorDropdownAberto, setSetorDropdownAberto] = useState(false);
+  const fileInputRef = useRef(null);
 
   const validarEEnviar = () => {
     const novosErros = {};
@@ -36,18 +38,31 @@ export default function ProductFormModal({
     if (erros[field]) setErros(prev => ({ ...prev, [field]: null }));
   };
 
+  const handleEscolhaImagem = () => {
+    if (salvando) return;
+    if (Platform.OS === 'web') {
+      fileInputRef.current?.click();
+    } else if (onSelecionarImagem) {
+      onSelecionarImagem();
+    }
+  };
+
+  // Encontra o nome do setor selecionado atualmente para exibir no botão do dropdown
+  const setorSelecionado = listaSetores.find(s => s.id === form.setorId);
+
   return (
     <Modal
       visible={visible}
       transparent={true}
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
       <View style={modernStyles.modalOverlay}>
-        <ScrollView style={modernStyles.modalContainer}>
+        <View style={modernStyles.modalContainer}>
+          
           {/* HEADER */}
           <View style={modernStyles.modalHeader}>
-            <Text style={modernStyles.modalTitle}>Novo Produto</Text>
+            <Text style={modernStyles.modalTitle}>Cadastrar Novo Produto</Text>
             <TouchableOpacity
               style={modernStyles.modalCloseBtn}
               onPress={onClose}
@@ -58,8 +73,9 @@ export default function ProductFormModal({
           </View>
 
           {/* BODY */}
-          <View style={modernStyles.modalBody}>
-            {/* NOME */}
+          <ScrollView contentContainerStyle={modernStyles.modalBody} showsVerticalScrollIndicator={false}>
+            
+            {/* NOME DO PRODUTO */}
             <Text style={modernStyles.formLabel}>Nome do Produto</Text>
             <TextInput
               style={[
@@ -67,8 +83,8 @@ export default function ProductFormModal({
                 focusedField === 'nome' && modernStyles.formInputFocus,
                 erros.nome && modernStyles.formInputError,
               ]}
-              placeholder="Ex: Teclado Mecânico RGB"
-              placeholderTextColor="rgba(224, 242, 254, 0.4)"
+              placeholder="Ex: estopa cinza"
+              placeholderTextColor="#94A3B8"
               value={form.nome}
               onChangeText={(val) => handleInputChange('nome', val)}
               onFocus={() => setFocusedField('nome')}
@@ -80,7 +96,7 @@ export default function ProductFormModal({
             {/* QUANTIDADE E UNIDADE */}
             <View style={modernStyles.inputRow}>
               <View style={modernStyles.inputColumn}>
-                <Text style={modernStyles.formLabel}>Quantidade Atual</Text>
+                <Text style={modernStyles.formLabel}>Quantidade Real</Text>
                 <TextInput
                   style={[
                     modernStyles.formInput,
@@ -88,7 +104,7 @@ export default function ProductFormModal({
                     erros.quantidade && modernStyles.formInputError,
                   ]}
                   placeholder="0"
-                  placeholderTextColor="rgba(224, 242, 254, 0.4)"
+                  placeholderTextColor="#94A3B8"
                   keyboardType="numeric"
                   value={form.quantidade}
                   onChangeText={(val) => handleInputChange('quantidade', val)}
@@ -107,7 +123,7 @@ export default function ProductFormModal({
                     focusedField === 'unidade' && modernStyles.formInputFocus,
                   ]}
                   placeholder="UN"
-                  placeholderTextColor="rgba(224, 242, 254, 0.4)"
+                  placeholderTextColor="#94A3B8"
                   value={form.unidade}
                   onChangeText={(val) => handleInputChange('unidade', val)}
                   onFocus={() => setFocusedField('unidade')}
@@ -126,7 +142,7 @@ export default function ProductFormModal({
                 erros.minimo && modernStyles.formInputError,
               ]}
               placeholder="Ex: 5"
-              placeholderTextColor="rgba(224, 242, 254, 0.4)"
+              placeholderTextColor="#94A3B8"
               keyboardType="numeric"
               value={form.minimo}
               onChangeText={(val) => handleInputChange('minimo', val)}
@@ -136,45 +152,98 @@ export default function ProductFormModal({
             />
             {erros.minimo && <Text style={modernStyles.formError}>{erros.minimo}</Text>}
 
-            {/* SETOR */}
+            {/* SETOR DE DESTINO - DROPDOWN CUSTOMIZADO (ZERO DEPENDÊNCIAS) */}
             <Text style={modernStyles.formLabel}>Setor de Destino</Text>
-            <View style={[
-              modernStyles.formInput,
-              { paddingHorizontal: 0, paddingVertical: 0, marginBottom: 12 },
-              erros.setorId && modernStyles.formInputError,
-            ]}>
-              <Picker
-                selectedValue={form.setorId}
-                onValueChange={(value) => handleInputChange('setorId', value)}
-                enabled={!salvando}
-                style={{ color: '#E0F2FE' }}
-              >
-                <Picker.Item label="Selecione um setor..." value="" />
-                {listaSetores.map((setor) => (
-                  <Picker.Item key={setor.id} label={setor.nome} value={setor.id} />
-                ))}
-              </Picker>
-            </View>
+            <TouchableOpacity
+              style={[
+                modernStyles.formInput,
+                focusedField === 'setor' && modernStyles.formInputFocus,
+                erros.setorId && modernStyles.formInputError,
+                { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }
+              ]}
+              onPress={() => !salvando && setSetorDropdownAberto(!setorDropdownAberto)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: form.setorId ? '#0F172A' : '#94A3B8', fontSize: 14, fontWeight: '500' }}>
+                {setorSelecionado ? setorSelecionado.nome : "Selecione um setor..."}
+              </Text>
+              <Text style={{ color: '#64748B', fontSize: 10 }}>{setorDropdownAberto ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+
+            {setorDropdownAberto && (
+              <View style={{ 
+                backgroundColor: '#FFFFFF', 
+                borderWidth: 1, 
+                borderColor: '#CBD5E1', 
+                borderRadius: 10, 
+                marginTop: 6, 
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                elevation: 2
+              }}>
+                {listaSetores.length === 0 ? (
+                  <View style={{ padding: 12 }}>
+                    <Text style={{ color: '#94A3B8', fontSize: 13 }}>Nenhum setor cadastrado</Text>
+                  </View>
+                ) : (
+                  listaSetores.map((setor) => (
+                    <TouchableOpacity
+                      key={setor.id}
+                      style={{ 
+                        paddingHorizontal: 14, 
+                        paddingVertical: 12, 
+                        borderBottomWidth: 1, 
+                        borderBottomColor: '#F1F5F9', 
+                        backgroundColor: form.setorId === setor.id ? '#F8FAFC' : '#FFFFFF' 
+                      }}
+                      onPress={() => {
+                        handleInputChange('setorId', setor.id);
+                        setSetorDropdownAberto(false);
+                      }}
+                    >
+                      <Text style={{ 
+                        color: '#0F172A', 
+                        fontSize: 14, 
+                        fontWeight: form.setorId === setor.id ? '700' : '500' 
+                      }}>
+                        {setor.nome}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            )}
             {erros.setorId && <Text style={modernStyles.formError}>{erros.setorId}</Text>}
 
-            {/* IMAGEM */}
+            {/* IMAGEM DO PRODUTO */}
             <Text style={modernStyles.formLabel}>Imagem do Produto (Opcional)</Text>
             <TouchableOpacity
               style={modernStyles.imageUploadBox}
-              onPress={onSelecionarImagem}
+              onPress={handleEscolhaImagem}
               disabled={salvando}
+              activeOpacity={0.6}
             >
               <Text style={modernStyles.imageUploadText}>
-                {imagem ? 'Imagem selecionada' : 'Clique para selecionar imagem'}
+                {imagem ? '✓ Imagem Selecionada' : 'Clique para selecionar imagem'}
               </Text>
             </TouchableOpacity>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={onSelecionarImagem}
-              disabled={salvando}
-              style={{ display: 'none' }}
-            />
+
+            {Platform.select({
+              web: (
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={onSelecionarImagem}
+                  disabled={salvando}
+                  style={{ display: 'none' }}
+                />
+              ),
+              default: null
+            })}
 
             {/* BOTÃO SUBMIT */}
             <TouchableOpacity
@@ -184,18 +253,20 @@ export default function ProductFormModal({
               ]}
               onPress={validarEEnviar}
               disabled={salvando}
+              activeOpacity={0.8}
             >
               {salvando ? (
                 <>
-                  <ActivityIndicator color="#00D9FF" size="small" />
-                  <Text style={modernStyles.btnSubmitText}>Processando...</Text>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text style={modernStyles.btnSubmitText}>Salvando...</Text>
                 </>
               ) : (
                 <Text style={modernStyles.btnSubmitText}>Salvar no Estoque</Text>
               )}
             </TouchableOpacity>
-          </View>
-        </ScrollView>
+
+          </ScrollView>
+        </View>
       </View>
     </Modal>
   );
