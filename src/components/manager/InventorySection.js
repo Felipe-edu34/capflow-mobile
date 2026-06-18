@@ -119,19 +119,19 @@ export default function InventorySection({
       </View>
 
       {/* LINHA DE BUSCA COM BOTÃO INTELIGENTE DE FILTROS */}
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+      <View style={styles.filterRow}>
         <View style={{ flex: 1 }}>
           <TextInput
             style={[
               styles.input,
               {
                 marginBottom: 0,
-                backgroundColor: '#F8FAFC',
+                backgroundColor: '#FFFFFF',
                 color: '#0F172A',
                 borderColor: '#CBD5E1',
                 fontSize: 13,
-                paddingVertical: 10,
-                fontWeight: '500',
+                paddingVertical: 12,
+                fontWeight: '600',
               },
             ]}
             placeholder="Pesquisar produto pelo nome..."
@@ -141,46 +141,29 @@ export default function InventorySection({
           />
         </View>
 
-        {/* BOTÃO PRINCIPAL DE FILTROS/ORDENAÇÃO */}
         <TouchableOpacity
           onPress={() => setFiltrosAbertos(!filtrosAbertos)}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            borderRadius: 6,
-            borderWidth: 1,
-            backgroundColor: filtrosAbertos ? '#0F172A' : '#FFFFFF',
-            borderColor: '#CBD5E1',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6
-          }}
+          style={[
+            styles.filterButton,
+            filtrosAbertos && styles.filterButtonActive,
+          ]}
         >
-          <Text style={{ 
-            fontSize: 13, 
-            fontWeight: '600', 
-            color: filtrosAbertos ? '#FFFFFF' : '#334155' 
-          }}>
-            Ordenação: <Text style={{ color: filtrosAbertos ? '#38BDF8' : '#0F766E' }}>{labelOrdenacaoAtual}</Text>
+          <Text style={[
+            styles.filterButtonText,
+            filtrosAbertos && styles.filterButtonTextActive,
+          ]}>
+            Ordenação: <Text style={filtrosAbertos ? styles.filterButtonTextActive : { color: '#0F766E' }}>{labelOrdenacaoAtual}</Text>
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* GAVETA RETRÁTIL: SÓ APARECE SE "filtrosAbertos" FOR TRUE */}
       {filtrosAbertos && (
-        <View style={{ 
-          backgroundColor: '#F1F5F9', 
-          padding: 10, 
-          borderRadius: 8, 
-          marginBottom: 16,
-          borderWidth: 1,
-          borderColor: '#E2E8F0'
-        }}>
-          <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', marginBottom: 8, textTransform: 'uppercase' }}>
+        <View style={styles.filterPanel}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', marginBottom: 10, textTransform: 'uppercase' }}>
             Selecione o critério de ordenação da lista:
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
               {[
                 { id: 'alfabetica', label: 'Nome (A-Z)' },
                 { id: 'maior_estoque', label: 'Maior Estoque' },
@@ -190,20 +173,15 @@ export default function InventorySection({
                 <TouchableOpacity
                   key={opcao.id}
                   onPress={() => onOrdenacaoChange(opcao.id)}
-                  style={{
-                    paddingVertical: 6,
-                    paddingHorizontal: 12,
-                    borderRadius: 16,
-                    backgroundColor: ordenacao === opcao.id ? '#1E293B' : '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: ordenacao === opcao.id ? '#0F172A' : '#CBD5E1',
-                  }}
+                  style={[
+                    styles.sortOption,
+                    ordenacao === opcao.id && styles.sortOptionActive,
+                  ]}
                 >
-                  <Text style={{ 
-                    fontSize: 12, 
-                    fontWeight: '600',
-                    color: ordenacao === opcao.id ? '#FFFFFF' : '#64748B' 
-                  }}>
+                  <Text style={[
+                    styles.sortOptionText,
+                    ordenacao === opcao.id && styles.sortOptionTextActive,
+                  ]}>
                     {opcao.label}
                   </Text>
                 </TouchableOpacity>

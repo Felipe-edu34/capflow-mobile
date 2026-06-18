@@ -10,6 +10,8 @@ import MovementHistory from '../components/manager/MovementHistory';
 import ProductForm from '../components/manager/ProductForm';
 import SectorForm from '../components/manager/SectorForm';
 import ManagerCharts from '../components/manager/ManagerCharts'; // <--- GRAFICOS IMPORTADOS REINTEGRADOS
+import ProductFormModal from '../components/manager/ProductFormModal';
+import modernStyles from '../components/manager/modernStyles';
 import styles from '../components/manager/managerStyles';
 
 const API_URL = 'http://127.0.0.1:8000/api';
@@ -56,6 +58,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [busca, setBusca] = useState('');
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [ordenacao, setOrdenacao] = useState('alfabetica');
+  const [modalProdutoVisivel, setModalProdutoVisivel] = useState(false);
 
   // 2. BUSCA DE DADOS CONECTADA AO DJANGO (Mantida idêntica à sua)
   const carregarItens = async () => {
@@ -205,7 +208,8 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       alert('Produto cadastrado com sucesso!');
       setFormProduto(initialProductForm);
       setImagem(null);
-      carregarItens(); 
+      setModalProdutoVisivel(false);
+      carregarItens();
       carregarMovimentacoes();
     } catch (error) {
       console.log('Erro detalhado:', error.response?.data || error.message);
@@ -286,76 +290,64 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC', flexDirection: 'column' }}>
-      
-      {/* BARRA SUPERIOR GLOBAL */}
-      <View style={{ height: 75, backgroundColor: '#06111F', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, borderBottomWidth: 1, borderColor: '#1E293B' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 36, height: 36, backgroundColor: '#0EA5E9', borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16 }}>CF</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.headerBrand}>
+          <View style={styles.brandMark}>
+            <Text style={styles.brandMarkText}>CF</Text>
           </View>
           <View>
-            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.5 }}>CapFlow</Text>
-            <Text style={{ color: '#64748B', fontSize: 11, fontWeight: '500' }}>Control Tower</Text>
+            <Text style={styles.headerTitle}>CapFlow</Text>
+            <Text style={styles.headerSubtitle}>Control Tower</Text>
           </View>
         </View>
-        <View style={{ backgroundColor: '#1E293B', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: '#334155' }}>
-          <Text style={{ color: '#38BDF8', fontSize: 12, fontWeight: '600' }}>Painel Corporativo</Text>
+        <View style={styles.badgeStatus}>
+          <Text style={styles.badgeStatusText}>Painel Corporativo</Text>
         </View>
       </View>
 
-      {/* CORPO DO WORKSPACE */}
       <View style={{ flex: 1, flexDirection: 'row' }}>
       
         {/* MENU LATERAL INCLUINDO A OPÇÃO 'VISÃO GERAL' */}
         {sidebarAberta && (
-          <View style={{ width: 280, backgroundColor: '#06111F', padding: 20, justifyContent: 'space-between', borderRightWidth: 1, borderColor: '#1E293B' }}>
-            <View style={{ flex: 1 }}>
-              <View style={{ gap: 6 }}>
-                <Text style={{ color: '#475569', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' }}>
-                  Módulos do Sistema
-                </Text>
+          <View style={styles.sidebar}>
+            <View style={styles.sidebarSection}>
+              <Text style={{ color: '#94A3B8', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>
+                Módulos do Sistema
+              </Text>
 
-                {[
-                  { id: 'dashboard', label: 'Visão Geral', desc: 'Métricas e Gráficos' }, // <--- REINTEGRADO AQUI
-                  { id: 'produtos', label: 'Novo Produto', desc: 'Gestão de estoque' },
-                  { id: 'setores', label: 'Novo Setor', desc: 'Mapear armazéns' },
-                  { id: 'movimentacoes', label: 'Movimentações', desc: 'Histórico de auditoria' },
-                ].map((item) => {
-                  const ativo = abaAtiva === item.id;
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      onPress={() => setAbaAtiva(item.id)}
-                      style={{
-                        paddingVertical: 12,
-                        paddingHorizontal: 14,
-                        borderRadius: 8,
-                        backgroundColor: ativo ? '#1E293B' : 'transparent',
-                        borderLeftWidth: ativo ? 4 : 0,
-                        borderLeftColor: '#0EA5E9',
-                      }}
-                    >
-                      <Text style={{ color: ativo ? '#FFF' : '#94A3B8', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
-                      <Text style={{ color: ativo ? '#38BDF8' : '#475569', fontSize: 11, marginTop: 2 }}>{item.desc}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              {[
+                { id: 'dashboard', label: 'Visão Geral', desc: 'Métricas e Gráficos' },
+                { id: 'produtos', label: 'Novo Produto', desc: 'Gestão de estoque' },
+                { id: 'setores', label: 'Novo Setor', desc: 'Mapear armazéns' },
+                { id: 'movimentacoes', label: 'Movimentações', desc: 'Histórico de auditoria' },
+              ].map((item) => {
+                const ativo = abaAtiva === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => setAbaAtiva(item.id)}
+                    style={[
+                      styles.sidebarItem,
+                      ativo && styles.sidebarItemActive,
+                    ]}
+                  >
+                    <Text style={[styles.sidebarItemTitle, ativo && { color: '#FFFFFF' }]}>{item.label}</Text>
+                    <Text style={[styles.sidebarItemDesc, ativo && { color: '#9FC5F8' }]}>{item.desc}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
-            <View style={{ paddingTop: 20, borderTopWidth: 1, borderColor: '#1E293B' }}>
-              <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+            <View style={styles.sidebarProfile}>
+              <Text style={styles.sidebarUsername} numberOfLines={1}>
                 {perfil?.username || 'Carregando...'}
               </Text>
-              <Text style={{ color: '#64748B', fontSize: 11, marginBottom: 12 }} numberOfLines={1}>
+              <Text style={styles.sidebarCompany} numberOfLines={1}>
                 {perfil?.empresa || 'Corporativo'}
               </Text>
-              <TouchableOpacity 
-                onPress={handleLogout}
-                style={{ backgroundColor: '#EF4444', paddingVertical: 8, borderRadius: 6, alignItems: 'center' }}
-              >
-                <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>Sair da Conta</Text>
+              <TouchableOpacity onPress={handleLogout} style={styles.sidebarLogout}>
+                <Text style={styles.sidebarLogoutText}>Sair da Conta</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -364,27 +356,21 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         {/* ÁREA DE CONTEÚDO PRINCIPAL */}
         <View style={{ flex: 1, flexDirection: 'column' }}>
           
-          {/* TOP BAR DE STATUS */}
-          <View style={{ height: 60, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={styles.topBar}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              <TouchableOpacity 
-                onPress={() => setSidebarAberta(!sidebarAberta)}
-                style={{ padding: 8, borderRadius: 6, backgroundColor: '#F1F5F9' }}
-              >
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#475569' }}>
-                  {sidebarAberta ? '✕' : '☰'}
-                </Text>
+              <TouchableOpacity onPress={() => setSidebarAberta(!sidebarAberta)} style={styles.toggleButton}>
+                <Text style={styles.toggleButtonText}>{sidebarAberta ? '✕' : '☰'}</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A', textTransform: 'capitalize' }}>
+              <Text style={styles.pageHeading}>
                 Painel Geral / {abaAtiva === 'dashboard' ? 'Visão Geral' : abaAtiva}
               </Text>
             </View>
-            <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99, borderWidth: 1, borderColor: '#BAE6FD' }}>
-              <Text style={{ color: '#0369A1', fontSize: 12, fontWeight: '600' }}>Gestor Ativo</Text>
+            <View style={styles.badgeStatus}>
+              <Text style={styles.badgeStatusText}>Gestor Ativo</Text>
             </View>
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: 24 }}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* INDICADORES DE DESEMPENHO REAL-TIME */}
             <View style={[styles.metricsGrid, { marginBottom: 24 }]}>
               <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens no catálogo" />
@@ -407,18 +393,21 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
             ) : (
               /* CASO CONTRÁRIO, EXIBE O SEU LAYOUT DE DUAS COLUNAS ORIGINAL COM OS FORMULÁRIOS */
               <View style={styles.workspaceWrap}>
-                
+
                 <View style={styles.formColumn}>
                   {abaAtiva === 'produtos' ? (
-                    <ProductForm
-                      form={formProduto}
-                      setFormValue={setProductFormValue}
-                      imagem={imagem}
-                      onSelecionarImagem={handleSelecionarImagem}
-                      onSubmit={handleCadastrarProduto}
-                      salvando={salvando}
-                      listaSetores={listaSetores}
-                    />
+                    <View style={[styles.listPanel, { padding: 20, backgroundColor: '#0F172A', borderColor: 'rgba(100, 200, 255, 0.2)' }]}>
+                      <Text style={[styles.sectionTitle, { color: '#00D9FF' }]}>Gestao de Produtos</Text>
+                      <Text style={[styles.sectionEyebrow, { color: 'rgba(224, 242, 254, 0.7)', marginTop: 8 }]}>
+                        Clique no botao abaixo para cadastrar um novo produto no estoque.
+                      </Text>
+                      <TouchableOpacity
+                        style={modernStyles.btnNovoInline}
+                        onPress={() => setModalProdutoVisivel(true)}
+                      >
+                        <Text style={modernStyles.btnNovoInlineText}>+ Novo Produto</Text>
+                      </TouchableOpacity>
+                    </View>
                   ) : abaAtiva === 'setores' ? (
                     <SectorForm
                       form={formSetor}
@@ -461,6 +450,23 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         </View>
 
       </View>
+
+      {/* MODAL DE FORMULÁRIO MODERNO */}
+      <ProductFormModal
+        visible={modalProdutoVisivel}
+        onClose={() => {
+          setModalProdutoVisivel(false);
+          setFormProduto(initialProductForm);
+          setImagem(null);
+        }}
+        form={formProduto}
+        setFormValue={setProductFormValue}
+        imagem={imagem}
+        onSelecionarImagem={handleSelecionarImagem}
+        onSubmit={handleCadastrarProduto}
+        salvando={salvando}
+        listaSetores={listaSetores}
+      />
 
       {/* MODAL DETALHADO COMPATIVEL COM OS DOIS MODOS */}
       <ProductDetailModal
