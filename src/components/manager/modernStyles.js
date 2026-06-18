@@ -290,7 +290,22 @@ const modernStyles = StyleSheet.create({
     elevation: 6,
     transition: 'all 0.3s ease',
   },
- 
+
+  btnNovoInlineSmall: {
+    width: 180,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#0EA5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0E7490',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 6,
+    transition: 'all 0.3s ease',
+  },
+  
   btnNovoInlineText: {
     color: '#FFFFFF',
     fontSize: 14,

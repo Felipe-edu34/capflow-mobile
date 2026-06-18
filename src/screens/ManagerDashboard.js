@@ -396,18 +396,14 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
                 <View style={styles.formColumn}>
                   {abaAtiva === 'produtos' ? (
-                    <View style={[styles.listPanel, { padding: 20, backgroundColor: '#0F172A', borderColor: 'rgba(100, 200, 255, 0.2)' }]}>
-                      <Text style={[styles.sectionTitle, { color: '#00D9FF' }]}>Gestao de Produtos</Text>
-                      <Text style={[styles.sectionEyebrow, { color: 'rgba(224, 242, 254, 0.7)', marginTop: 8 }]}>
-                        Clique no botao abaixo para cadastrar um novo produto no estoque.
-                      </Text>
-                      <TouchableOpacity
-                        style={modernStyles.btnNovoInline}
-                        onPress={() => setModalProdutoVisivel(true)}
-                      >
-                        <Text style={modernStyles.btnNovoInlineText}>+ Novo Produto</Text>
-                      </TouchableOpacity>
-                    </View>
+                    <View style={[styles.listPanel, { padding: 16, backgroundColor: '#0F172A', borderColor: 'rgba(100, 200, 255, 0.2)', alignItems: 'center', justifyContent: 'center', minHeight: 120 }]}>                        
+                        <TouchableOpacity
+                          style={modernStyles.btnNovoInlineSmall}
+                          onPress={() => setModalProdutoVisivel(true)}
+                        >
+                          <Text style={modernStyles.btnNovoInlineText}>+ Novo Produto</Text>
+                        </TouchableOpacity>
+                      </View>
                   ) : abaAtiva === 'setores' ? (
                     <SectorForm
                       form={formSetor}
