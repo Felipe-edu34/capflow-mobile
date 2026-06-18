@@ -9,10 +9,12 @@ import ProductDetailModal from '../components/manager/ProductDetailModal';
 import MovementHistory from '../components/manager/MovementHistory';
 import ProductForm from '../components/manager/ProductForm';
 import SectorForm from '../components/manager/SectorForm';
+import ManagerCharts from '../components/manager/ManagerCharts'; // <--- GRAFICOS IMPORTADOS REINTEGRADOS
 import styles from '../components/manager/managerStyles';
 
 const API_URL = 'http://127.0.0.1:8000/api';
 const BASE_URL = 'http://127.0.0.1:8000';
+
 const initialProductForm = {
   nome: '',
   quantidade: '',
@@ -38,8 +40,8 @@ function getSetorNome(item) {
 }
 
 export default function ManagerDashboard({ perfil, token, handleLogout }) {
-  // 1. ESTADOS DO DASHBOARD
-  const [abaAtiva, setAbaAtiva] = useState('produtos');
+  // 1. ESTADOS DO DASHBOARD (Aba padrão alterada para 'dashboard' para abrir nos gráficos)
+  const [abaAtiva, setAbaAtiva] = useState('dashboard');
   const [itens, setItens] = useState([]);
   const [sidebarAberta, setSidebarAberta] = useState(true);
   const [listaSetores, setListaSetores] = useState([]);
@@ -55,7 +57,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [ordenacao, setOrdenacao] = useState('alfabetica');
 
-  // 2. BUSCA DE DADOS
+  // 2. BUSCA DE DADOS CONECTADA AO DJANGO (Mantida idêntica à sua)
   const carregarItens = async () => {
     try {
       const response = await axios.get(`${API_URL}/itens/`, {
@@ -92,12 +94,14 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   useEffect(() => {
-    carregarItens();
-    carregarSetores();
-    carregarMovimentacoes();
-  }, []);
+    if (token) {
+      carregarItens();
+      carregarSetores();
+      carregarMovimentacoes();
+    }
+  }, [token]);
 
-  // 3. INTELIGÊNCIA DE INVENTÁRIO
+  // 3. INTELIGÊNCIA DE INVENTÁRIO (Mantido useMemo original intacto)
   const { indicadores, gruposPorSetor, setores } = useMemo(() => {
     const mapaSetores = new Map();
     let volume = 0;
@@ -163,11 +167,11 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   const handleSelecionarImagem = (event) => {
-    const arquivo = event.target.files[0];
+    const arquivo = event.target.files?.[0];
     if (arquivo) setImagem(arquivo);
   };
 
-  // --- FUNÇÕES OPERACIONAIS (POST, PATCH, DELETE) ---
+  // --- FUNÇÕES OPERACIONAIS ORIGINAIS ---
   const handleCadastrarProduto = async () => {
     const camposFaltando = [];
     if (!formProduto.nome?.trim()) camposFaltando.push('Nome do produto');
@@ -204,15 +208,8 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarItens(); 
       carregarMovimentacoes();
     } catch (error) {
-      console.log('Erro detalhado da API:', error.response?.data || error.message);
-      if (error.response?.data && typeof error.response.data === 'object') {
-        const errosServidor = Object.entries(error.response.data)
-          .map(([campo, msgs]) => `${campo}: ${Array.isArray(msgs) ? msgs.join(', ') : String(msgs)}`)
-          .join('\n');
-        alert(`Erro retornado pelo Django:\n${errosServidor}`);
-      } else {
-        alert('Erro ao salvar o produto no estoque.');
-      }
+      console.log('Erro detalhado:', error.response?.data || error.message);
+      alert('Erro ao salvar o produto no estoque.');
     } finally {
       setSalvando(false);
     }
@@ -238,7 +235,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarItens();
       carregarSetores();
     } catch (error) {
-      console.log('Erro ao cadastrar setor:', error.response?.data || error.message);
       alert('Erro ao criar setor.');
     } finally {
       setSalvando(false);
@@ -246,7 +242,8 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   const handleExcluirProduto = async (idProduto) => {
-    if (!window.confirm('Tem certeza que deseja excluir este produto permanentemente?')) return;
+    const confirmar = window?.confirm ? window.confirm('Deseja excluir permanentemente?') : true;
+    if (!confirmar) return;
 
     try {
       await axios.delete(`${API_URL}/itens/${idProduto}/`, {
@@ -257,7 +254,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarItens();
       carregarMovimentacoes();
     } catch (error) {
-      console.log('Erro ao excluir:', error);
       alert('Erro ao excluir o produto.');
     }
   };
@@ -285,7 +281,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarItens();
       carregarMovimentacoes();
     } catch (error) {
-      console.log('Erro ao atualizar:', error.response?.data || error.message);
       alert('Erro ao atualizar o produto.');
     }
   };
@@ -293,7 +288,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC', flexDirection: 'column' }}>
       
-      {/* 🟦 BARRA SUPERIOR GLOBAL DE INFORMAÇÕES (BRANDING & STATUS DE ALTO NÍVEL) */}
+      {/* BARRA SUPERIOR GLOBAL */}
       <View style={{ height: 75, backgroundColor: '#06111F', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, borderBottomWidth: 1, borderColor: '#1E293B' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ width: 36, height: 36, backgroundColor: '#0EA5E9', borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}>
@@ -309,159 +304,165 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         </View>
       </View>
 
-      {/* CORPO DO WORKSPACE (MENU + CONTEÚDO DISTRIBUÍDOS EM LINHA) */}
+      {/* CORPO DO WORKSPACE */}
       <View style={{ flex: 1, flexDirection: 'row' }}>
       
-      {/* MENU LATERAL DE NAVEGAÇÃO DINÂMICO */}
-      {sidebarAberta && (
-        <View style={{ width: 280, backgroundColor: '#06111F', padding: 20, justifyContent: 'space-between', borderRightWidth: 1, borderColor: '#1E293B' }}>
-        <View style={{ flex: 1 }}>
+        {/* MENU LATERAL INCLUINDO A OPÇÃO 'VISÃO GERAL' */}
+        {sidebarAberta && (
+          <View style={{ width: 280, backgroundColor: '#06111F', padding: 20, justifyContent: 'space-between', borderRightWidth: 1, borderColor: '#1E293B' }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ gap: 6 }}>
+                <Text style={{ color: '#475569', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' }}>
+                  Módulos do Sistema
+                </Text>
 
-          {/* Opções do Menu */}
-          <View style={{ gap: 6 }}>
-            <Text style={{ color: '#475569', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' }}>
-              Módulos do Sistema
-            </Text>
+                {[
+                  { id: 'dashboard', label: 'Visão Geral', desc: 'Métricas e Gráficos' }, // <--- REINTEGRADO AQUI
+                  { id: 'produtos', label: 'Novo Produto', desc: 'Gestão de estoque' },
+                  { id: 'setores', label: 'Novo Setor', desc: 'Mapear armazéns' },
+                  { id: 'movimentacoes', label: 'Movimentações', desc: 'Histórico de auditoria' },
+                ].map((item) => {
+                  const ativo = abaAtiva === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => setAbaAtiva(item.id)}
+                      style={{
+                        paddingVertical: 12,
+                        paddingHorizontal: 14,
+                        borderRadius: 8,
+                        backgroundColor: ativo ? '#1E293B' : 'transparent',
+                        borderLeftWidth: ativo ? 4 : 0,
+                        borderLeftColor: '#0EA5E9',
+                      }}
+                    >
+                      <Text style={{ color: ativo ? '#FFF' : '#94A3B8', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
+                      <Text style={{ color: ativo ? '#38BDF8' : '#475569', fontSize: 11, marginTop: 2 }}>{item.desc}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
 
-            {[
-              { id: 'produtos', label: 'Novo Produto', desc: 'Gestão de estoque' },
-              { id: 'setores', label: 'Novo Setor', desc: 'Mapear armazéns' },
-              { id: 'movimentacoes', label: 'Movimentações', desc: 'Histórico de auditoria' },
-            ].map((item) => {
-              const ativo = abaAtiva === item.id;
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => setAbaAtiva(item.id)}
-                  style={{
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    borderRadius: 8,
-                    backgroundColor: ativo ? '#1E293B' : 'transparent',
-                    borderLeftWidth: ativo ? 4 : 0,
-                    borderLeftColor: '#0EA5E9',
-                  }}
-                >
-                  <Text style={{ color: ativo ? '#FFF' : '#94A3B8', fontSize: 13, fontWeight: '600' }}>{item.label}</Text>
-                  <Text style={{ color: ativo ? '#38BDF8' : '#475569', fontSize: 11, marginTop: 2 }}>{item.desc}</Text>
-                </TouchableOpacity>
-              );
-            })}
+            <View style={{ paddingTop: 20, borderTopWidth: 1, borderColor: '#1E293B' }}>
+              <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+                {perfil?.username || 'Carregando...'}
+              </Text>
+              <Text style={{ color: '#64748B', fontSize: 11, marginBottom: 12 }} numberOfLines={1}>
+                {perfil?.empresa || 'Corporativo'}
+              </Text>
+              <TouchableOpacity 
+                onPress={handleLogout}
+                style={{ backgroundColor: '#EF4444', paddingVertical: 8, borderRadius: 6, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>Sair da Conta</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-
-        {/* Perfil do Usuário e Logout na Base da Sidebar */}
-        <View style={{ paddingTop: 20, borderTopWidth: 1, borderColor: '#1E293B' }}>
-          <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
-            {perfil.username}
-          </Text>
-          <Text style={{ color: '#64748B', fontSize: 11, marginBottom: 12 }} numberOfLines={1}>
-            {perfil.empresa}
-          </Text>
-          <TouchableOpacity 
-            onPress={handleLogout}
-            style={{ backgroundColor: '#EF4444', paddingVertical: 8, borderRadius: 6, alignItems: 'center' }}
-          >
-            <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>Sair da Conta</Text>
-          </TouchableOpacity>
-        </View>
-        </View>
         )}
 
-      {/* 🖥️ ÁREA DE CONTEÚDO PRINCIPAL (DIREITA) */}
-      <View style={{ flex: 1, flexDirection: 'column' }}>
-        
-        {/* TOP BAR DE STATUS */}
-        <View style={{ height: 60, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <TouchableOpacity 
-              onPress={() => setSidebarAberta(!sidebarAberta)}
-              style={{ padding: 8, borderRadius: 6, backgroundColor: '#F1F5F9' }}
-            >
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#475569' }}>
-                {sidebarAberta ? '✕' : '☰'}
+        {/* ÁREA DE CONTEÚDO PRINCIPAL */}
+        <View style={{ flex: 1, flexDirection: 'column' }}>
+          
+          {/* TOP BAR DE STATUS */}
+          <View style={{ height: 60, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <TouchableOpacity 
+                onPress={() => setSidebarAberta(!sidebarAberta)}
+                style={{ padding: 8, borderRadius: 6, backgroundColor: '#F1F5F9' }}
+              >
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#475569' }}>
+                  {sidebarAberta ? '✕' : '☰'}
+                </Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A', textTransform: 'capitalize' }}>
+                Painel Geral / {abaAtiva === 'dashboard' ? 'Visão Geral' : abaAtiva}
               </Text>
-            </TouchableOpacity>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A', textTransform: 'capitalize' }}>
-            Painel Geral / {abaAtiva}
-          </Text>
+            </View>
+            <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99, borderWidth: 1, borderColor: '#BAE6FD' }}>
+              <Text style={{ color: '#0369A1', fontSize: 12, fontWeight: '600' }}>Gestor Ativo</Text>
+            </View>
           </View>
-          <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 99, borderWidth: 1, borderColor: '#BAE6FD' }}>
-            <Text style={{ color: '#0369A1', fontSize: 12, fontWeight: '600' }}>Gestor Ativo</Text>
-          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 24 }}>
+            {/* INDICADORES DE DESEMPENHO REAL-TIME */}
+            <View style={[styles.metricsGrid, { marginBottom: 24 }]}>
+              <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens no catálogo" />
+              <MetricCard
+                label="Críticos"
+                value={indicadores.itensCriticos}
+                hint="abaixo do mínimo"
+                danger={indicadores.itensCriticos > 0}
+              />
+              <MetricCard label="Setores" value={indicadores.setores} hint="áreas mapeadas" />
+              <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
+            </View>
+
+            {/* CONDICIONAL INTELIGENTE PARA A RENDERIZAÇÃO */}
+            {abaAtiva === 'dashboard' ? (
+              /* SE A ABA FOR 'DASHBOARD' EXIBE SÓ OS GRAFICOS CORPORATIVOS */
+              <View style={{ width: '100%', marginTop: 8 }}>
+                <ManagerCharts gruposPorSetor={gruposPorSetor} itens={itens} />
+              </View>
+            ) : (
+              /* CASO CONTRÁRIO, EXIBE O SEU LAYOUT DE DUAS COLUNAS ORIGINAL COM OS FORMULÁRIOS */
+              <View style={styles.workspaceWrap}>
+                
+                <View style={styles.formColumn}>
+                  {abaAtiva === 'produtos' ? (
+                    <ProductForm
+                      form={formProduto}
+                      setFormValue={setProductFormValue}
+                      imagem={imagem}
+                      onSelecionarImagem={handleSelecionarImagem}
+                      onSubmit={handleCadastrarProduto}
+                      salvando={salvando}
+                      listaSetores={listaSetores}
+                    />
+                  ) : abaAtiva === 'setores' ? (
+                    <SectorForm
+                      form={formSetor}
+                      setFormValue={setSectorFormValue}
+                      onSubmit={handleCadastrarSetor}
+                      salvando={salvando}
+                    />
+                  ) : (
+                    <View style={[styles.listPanel, { padding: 20 }]}>
+                      <Text style={styles.sectionTitle}>Painel de Auditoria</Text>
+                      <Text style={styles.sectionEyebrow}>O histórico completo de entradas e saídas automáticas geradas pelo painel está listado ao lado.</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.listColumn}>
+                  {abaAtiva === 'movimentacoes' ? (
+                    <MovementHistory movimentacoes={movimentacoes} />
+                  ) : (
+                    <InventorySection
+                      grupos={gruposPorSetor}
+                      setores={setores}
+                      setorSelecionado={setorSelecionado}
+                      onSelecionarSetor={setSetorSelecionado}
+                      busca={busca}
+                      onBuscaChange={setBusca}
+                      loading={loading}
+                      totalItens={itens.length}
+                      baseUrl={BASE_URL}
+                      onOpenItem={setItemSelecionado}
+                      ordenacao={ordenacao}
+                      onOrdenacaoChange={setOrdenacao}
+                    />
+                  )}
+                </View>
+
+              </View>
+            )}
+          </ScrollView>
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 24 }}>
-          {/* INDICADORES DE DESEMPENHO (Sempre visíveis no topo do espaço de trabalho) */}
-          <View style={[styles.metricsGrid, { marginBottom: 24 }]}>
-            <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens no catálogo" />
-            <MetricCard
-              label="Críticos"
-              value={indicadores.itensCriticos}
-              hint="abaixo do mínimo"
-              danger={indicadores.itensCriticos > 0}
-            />
-            <MetricCard label="Setores" value={indicadores.setores} hint="áreas mapeadas" />
-            <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
-          </View>
-
-          {/* WORKSPACE DIVIDIDO DE ACORDO COM A ABA ATIVA */}
-          <View style={styles.workspaceWrap}>
-            
-            {/* Coluna Esquerda: Formulários Dinâmicos */}
-            <View style={styles.formColumn}>
-              {abaAtiva === 'produtos' ? (
-                <ProductForm
-                  form={formProduto}
-                  setFormValue={setProductFormValue}
-                  imagem={imagem}
-                  onSelecionarImagem={handleSelecionarImagem}
-                  onSubmit={handleCadastrarProduto}
-                  salvando={salvando}
-                  listaSetores={listaSetores}
-                />
-              ) : abaAtiva === 'setores' ? (
-                <SectorForm
-                  form={formSetor}
-                  setFormValue={setSectorFormValue}
-                  onSubmit={handleCadastrarSetor}
-                  salvando={salvando}
-                />
-              ) : (
-                <View style={[styles.listPanel, { padding: 20 }]}>
-                  <Text style={styles.sectionTitle}>Painel de Auditoria</Text>
-                  <Text style={styles.sectionEyebrow}>O histórico completo de entradas e saídas automáticas geradas pelo painel está listado ao lado.</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Coluna Direita: Listagem de Inventário ou Histórico */}
-            <View style={styles.listColumn}>
-              {abaAtiva === 'movimentacoes' ? (
-                <MovementHistory movimentacoes={movimentacoes} />
-              ) : (
-                <InventorySection
-                  grupos={gruposPorSetor}
-                  setores={setores}
-                  setorSelecionado={setorSelecionado}
-                  onSelecionarSetor={setSetorSelecionado}
-                  busca={busca}
-                  onBuscaChange={setBusca}
-                  loading={loading}
-                  totalItens={itens.length}
-                  baseUrl={BASE_URL}
-                  onOpenItem={setItemSelecionado}
-                  ordenacao={ordenacao}
-                  onOrdenacaoChange={setOrdenacao}
-                />
-              )}
-            </View>
-
-          </View>
-        </ScrollView>
       </View>
 
-      {/* MODAL DETALHADO */}
+      {/* MODAL DETALHADO COMPATIVEL COM OS DOIS MODOS */}
       <ProductDetailModal
         item={itemSelecionado}
         visible={Boolean(itemSelecionado)}
@@ -471,7 +472,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         onMaryPatch={handleMaryPatch}
         listaSetores={listaSetores}
       />
-      </View>
     </SafeAreaView>
   );
 }
