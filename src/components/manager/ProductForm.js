@@ -22,8 +22,8 @@ export default function ProductForm({
   return (
     <View style={styles.formPanel}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionEyebrow}>CADASTRO</Text>
-        <Text style={styles.sectionTitle}>Novo produto</Text>
+        <Text style={styles.sectionEyebrow}>ESTOQUE</Text>
+        <Text style={styles.sectionTitle}>Registrar Item</Text>
       </View>
 
       <Label>Nome do produto</Label>

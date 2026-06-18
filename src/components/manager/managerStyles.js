@@ -105,7 +105,15 @@ const styles = StyleSheet.create({
   metricDanger: { color: '#DC2626' },
   metricHint: { color: '#7C8DA0', fontSize: 12, marginTop: 5, fontWeight: '700' },
   // Layout do painel (mais previsível em telas diferentes)
-  workspaceWrap: { flexDirection: 'row', gap: 18, alignItems: 'flex-start' },
+  workspaceWrap: { 
+    flexDirection: 'row', 
+    gap: 24, 
+    alignItems: 'flex-start',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+  },
   formColumn: { flex: 1, minWidth: 320, maxWidth: 420 },
   listColumn: { flex: 2, minWidth: 360 },
 
