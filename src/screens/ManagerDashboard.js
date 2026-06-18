@@ -7,7 +7,8 @@ import InventorySection from '../components/manager/InventorySection';
 import MetricCard from '../components/manager/MetricCard';
 import ProductDetailModal from '../components/manager/ProductDetailModal';
 import MovementHistory from '../components/manager/MovementHistory';
-import SectorForm from '../components/manager/SectorForm';
+import SectorFormModal from '../components/manager/SectorFormModal';
+import SectorList from '../components/manager/SectorList'; // <-- NOVO COMPONENTE IMPORTADO
 import ManagerCharts from '../components/manager/ManagerCharts'; 
 import ProductFormModal from '../components/manager/ProductFormModal';
 import modernStyles from '../components/manager/modernStyles';
@@ -59,6 +60,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   
   const [modalAlertasVisivel, setModalAlertasVisivel] = useState(false);
   const [alertaVisualizado, setAlertaVisualizado] = useState(false);
+  const [modalSetorVisivel, setModalSetorVisivel] = useState(false);
 
   const carregarItens = async () => {
     try {
@@ -246,6 +248,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
       alert('Setor operacional criado com sucesso!');
       setFormSetor(initialSectorForm);
+      setModalSetorVisivel(false);
       carregarItens();
       carregarSetores();
     } catch (error) {
@@ -342,7 +345,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
               {[
                 { id: 'dashboard', label: 'Visão Geral', desc: 'Métricas e Gráficos' },
                 { id: 'produtos', label: 'Inventário', desc: 'Gestão de estoque' },
-                { id: 'setores', label: 'Novo Setor', desc: 'Mapear armazéns' },
+                { id: 'setores', label: 'Setores', desc: 'Gestão de áreas' }, // <-- TEXTO ATUALIZADO
                 { id: 'movimentacoes', label: 'Movimentações', desc: 'Histórico de auditoria' },
               ].map((item) => {
                 const ativo = abaAtiva === item.id;
@@ -425,7 +428,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
               <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
             </View>
 
-            {/* AQUI ESTÁ A LÓGICA CORRIGIDA DAS ABAS */}
             <View style={{ width: '100%', marginTop: 8 }}>
               
               {abaAtiva === 'dashboard' && (
@@ -450,13 +452,13 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
                 />
               )}
 
+              {/* LÓGICA ATUALIZADA DA ABA DE SETORES: 2 COLUNAS */}
               {abaAtiva === 'setores' && (
-                <View style={{ width: '100%', maxWidth: 600, alignSelf: 'center' }}>
-                  <SectorForm
-                    form={formSetor}
-                    setFormValue={setSectorFormValue}
-                    onSubmit={handleCadastrarSetor}
-                    salvando={salvando}
+                <View style={{ width: '100%' }}>
+                  <SectorList 
+                    setores={listaSetores} 
+                    itens={itens} 
+                    onNovoSetor={() => setModalSetorVisivel(true)}
                   />
                 </View>
               )}
@@ -472,6 +474,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
       </View>
 
+      {/* MODAL DE ALERTAS E RESTANTE DOS MODAIS OMITIDOS PARA BREVIDADE, MAS INTACTOS NO SEU CÓDIGO ORIGINAL */}
       <Modal
         visible={modalAlertasVisivel}
         transparent={true}
@@ -526,6 +529,18 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
           </View>
         </View>
       </Modal>
+      
+      <SectorFormModal
+        visible={modalSetorVisivel}
+        onClose={() => {
+          setModalSetorVisivel(false);
+          setFormSetor(initialSectorForm);
+        }}
+        form={formSetor}
+        setFormValue={setSectorFormValue}
+        onSubmit={handleCadastrarSetor}
+        salvando={salvando}
+      />
 
       <ProductFormModal
         visible={modalProdutoVisivel}
