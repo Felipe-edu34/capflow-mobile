@@ -1,94 +1,117 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ActivityIndicator, 
+  useWindowDimensions, 
+  ScrollView, 
+  KeyboardAvoidingView, 
+  Platform 
+} from 'react-native';
 
 export default function LoginScreen({ username, setUsername, password, setPassword, handleLogin, loading }) {
+  // Pega a largura da tela em tempo real para fazer a responsividade
+  const { width } = useWindowDimensions();
+  
+  // Define que telas maiores que 900px são consideradas "Desktop/Tablet Landscape"
+  const isLargeScreen = width > 900;
+
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* O backdrop (fundo com linhas) fica absoluto atrás de tudo */}
       <View style={styles.backdrop}>
         <View style={styles.gridLine} />
         <View style={[styles.gridLine, styles.gridLineTwo]} />
       </View>
 
-      <View style={styles.heroPanel}>
-        <View style={styles.brandRow}>
-          <View style={styles.brandMark}>
-            <Text style={styles.brandMarkText}>CF</Text>
+      {/* Envolvemos o conteúdo no ScrollView */}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Container principal que muda a direção dependendo da tela */}
+        <View style={[
+          styles.contentContainer,
+          isLargeScreen ? styles.rowLayout : styles.columnLayout
+        ]}>
+          
+          {/* Painel Esquerdo (Texto) */}
+          <View style={[styles.heroPanel, isLargeScreen && styles.heroPanelLarge]}>
+            <View style={styles.brandRow}>
+              <View style={styles.brandMark}>
+                <Text style={styles.brandMarkText}>CF</Text>
+              </View>
+              <View>
+                <Text style={styles.logo}>CapFlow</Text>
+                <Text style={styles.subtitle}>Plataforma de Comando de Inventário</Text>
+              </View>
+            </View>
+
+            <Text style={styles.headline}>Domine seu Inventário em Tempo Real</Text>
+            <Text style={styles.description}>
+              Acompanhe estoque, setores e movimentações em uma experiência mais precisa, segura e pronta para rotina empresarial.
+            </Text>
           </View>
-          <View>
-            <Text style={styles.logo}>CapFlow</Text>
-            <Text style={styles.subtitle}>Inventory Command Platform</Text>
+
+          {/* Painel Direito (Login) */}
+          <View style={[styles.loginPanel, isLargeScreen && styles.loginPanelLarge]}>
+            <Text style={styles.cardEyebrow}>Acesso Seguro</Text>
+            <Text style={styles.cardTitle}>Entrar no console</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Usuário"
+              placeholderTextColor="#8A97A8"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Senha"
+              placeholderTextColor="#8A97A8"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+
+            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+              {loading ? <ActivityIndicator color="#06111F" /> : <Text style={styles.buttonText}>Acessar Dashboard</Text>}
+            </TouchableOpacity>
+
+            <View style={styles.securityRow}>
+              <View style={styles.statusDot} />
+              <Text style={styles.securityText}>Sessão protegida por autenticação via token</Text>
+            </View>
           </View>
+
         </View>
-
-        <Text style={styles.headline}>Controle operacional com visão executiva.</Text>
-        <Text style={styles.description}>
-          Acompanhe estoque, setores e movimentações em uma experiência mais precisa, segura e pronta para rotina empresarial.
-        </Text>
-
-        <View style={styles.signalRow}>
-          <View style={styles.signalItem}>
-            <Text style={styles.signalValue}>24/7</Text>
-            <Text style={styles.signalLabel}>monitoramento</Text>
-          </View>
-          <View style={styles.signalDivider} />
-          <View style={styles.signalItem}>
-            <Text style={styles.signalValue}>ERP</Text>
-            <Text style={styles.signalLabel}>ready</Text>
-          </View>
-          <View style={styles.signalDivider} />
-          <View style={styles.signalItem}>
-            <Text style={styles.signalValue}>API</Text>
-            <Text style={styles.signalLabel}>conectada</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.loginPanel}>
-        <Text style={styles.cardEyebrow}>Acesso Seguro</Text>
-        <Text style={styles.cardTitle}>Entrar no console</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Usuário"
-          placeholderTextColor="#8A97A8"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          placeholderTextColor="#8A97A8"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#06111F" /> : <Text style={styles.buttonText}>Acessar Dashboard</Text>}
-        </TouchableOpacity>
-
-        <View style={styles.securityRow}>
-          <View style={styles.statusDot} />
-          <Text style={styles.securityText}>Sessão protegida por autenticação via token</Text>
-        </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
     backgroundColor: '#07111F',
-    paddingHorizontal: 24,
-    paddingVertical: 28,
+  },
+  scrollContent: {
+    flexGrow: 1, // Permite que o scroll ocupe a tela toda se o conteúdo for menor, mas role se for maior
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 40, // Dá um respiro para não grudar no topo/base ao rolar
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     opacity: 0.35,
+    zIndex: -1, // Garante que o fundo não bloqueie o clique nos botões
   },
   gridLine: {
     position: 'absolute',
@@ -104,6 +127,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#154E5D',
     transform: [{ rotate: '8deg' }],
   },
+  contentContainer: {
+    width: '100%',
+    maxWidth: 1100,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 40,
+  },
+  rowLayout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  columnLayout: {
+    flexDirection: 'column',
+  },
   heroPanel: {
     width: '100%',
     maxWidth: 540,
@@ -117,6 +156,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 30,
     elevation: 12,
+  },
+  heroPanelLarge: {
+    flex: 1.2,
+    maxWidth: 600,
   },
   brandRow: {
     flexDirection: 'row',
@@ -150,8 +193,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   headline: {
-    fontSize: 34,
-    lineHeight: 42,
+    fontSize: 38,
+    lineHeight: 46,
     fontWeight: '900',
     color: '#FFFFFF',
     marginBottom: 18,
@@ -161,36 +204,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: '#B6C4D5',
     maxWidth: 500,
-  },
-  signalRow: {
-    marginTop: 30,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    borderRadius: 16,
-    padding: 18,
-  },
-  signalItem: {
-    flex: 1,
-  },
-  signalValue: {
-    color: '#5EEAD4',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  signalLabel: {
-    color: '#8EA4BC',
-    fontSize: 11,
-    marginTop: 4,
-    textTransform: 'uppercase',
-  },
-  signalDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
-    marginHorizontal: 14,
+    marginBottom: 10,
   },
   loginPanel: {
     backgroundColor: '#FFFFFF',
@@ -198,7 +212,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     width: '100%',
     maxWidth: 420,
-    marginTop: 24,
     borderWidth: 1,
     borderColor: '#E6EDF4',
     shadowColor: '#000',
@@ -206,6 +219,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 28,
     elevation: 10,
+  },
+  loginPanelLarge: {
+    flex: 0.8,
+    marginTop: 0,
   },
   cardEyebrow: {
     color: '#0F766E',
