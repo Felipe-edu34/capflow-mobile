@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, Text, TouchableOpacity, View, Modal } from 'react-native';
+import { SafeAreaView, ScrollView, Text, TouchableOpacity, View, Modal, TextInput } from 'react-native';
 import axios from 'axios';
 
 // Importando os componentes modulares do gerente
@@ -8,7 +8,7 @@ import MetricCard from '../components/manager/MetricCard';
 import ProductDetailModal from '../components/manager/ProductDetailModal';
 import MovementHistory from '../components/manager/MovementHistory';
 import SectorFormModal from '../components/manager/SectorFormModal';
-import SectorList from '../components/manager/SectorList'; // <-- NOVO COMPONENTE IMPORTADO
+import SectorList from '../components/manager/SectorList'; 
 import ManagerCharts from '../components/manager/ManagerCharts'; 
 import ProductFormModal from '../components/manager/ProductFormModal';
 import modernStyles from '../components/manager/modernStyles';
@@ -55,6 +55,10 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [setorSelecionado, setSetorSelecionado] = useState('todos');
   const [busca, setBusca] = useState('');
   const [movimentacoes, setMovimentacoes] = useState([]);
+  const [modalRapidoVisivel, setModalRapidoVisivel] = useState(false);
+  const [itemRapidoSelecionado, setItemRapidoSelecionado] = useState(null);
+  const [tipoRapido, setTipoRapido] = useState('ENTRADA');
+  const [quantidadeRapida, setQuantidadeRapida] = useState('');
   const [ordenacao, setOrdenacao] = useState('alfabetica');
   const [modalProdutoVisivel, setModalProdutoVisivel] = useState(false);
   
@@ -105,18 +109,31 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   }, [token]);
 
-  const { indicadores, gruposPorSetor, setores, listaItensCriticos } = useMemo(() => {
+  // 1. Extração Global de Setores (para alimentar os botões e filtros sem depender do item selecionado)
+  const setores = useMemo(() => {
+    const mapa = new Map();
+    itens.forEach(item => {
+      const key = getSetorKey(item);
+      const nome = getSetorNome(item);
+      if (!mapa.has(key)) mapa.set(key, { key, nome });
+    });
+    return Array.from(mapa.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [itens]);
+
+  // 2. Cálculo dos Dados Reativos (Responde ao filtro "setorSelecionado")
+  const { indicadores, gruposPorSetor, listaItensCriticos, itensFiltrados } = useMemo(() => {
     const mapaSetores = new Map();
     let volume = 0;
     let itensCriticos = 0;
     const criticosArr = [];
 
-    const itensFiltrados = itens.filter((item) => {
-      if (!busca.trim()) return true;
-      return item.nome.toLowerCase().includes(busca.toLowerCase());
+    const filtrados = itens.filter((item) => {
+      if (busca.trim() && !item.nome.toLowerCase().includes(busca.toLowerCase())) return false;
+      if (setorSelecionado !== 'todos' && getSetorKey(item) !== String(setorSelecionado)) return false;
+      return true;
     });
 
-    itensFiltrados.forEach((item) => {
+    filtrados.forEach((item) => {
       const key = getSetorKey(item);
       const nome = getSetorNome(item);
       const estoqueBaixo = Number(item.quantidade_atual) <= Number(item.estoque_minimo);
@@ -156,16 +173,16 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
     return {
       indicadores: {
-        totalItens: itensFiltrados.length,
+        totalItens: filtrados.length,
         itensCriticos,
-        setores: grupos.length,
+        setores: mapaSetores.size,
         volume,
       },
       gruposPorSetor: grupos,
-      setores: grupos.map(({ key, nome }) => ({ key, nome })),
       listaItensCriticos: criticosArr,
+      itensFiltrados: filtrados,
     };
-  }, [itens, busca, ordenacao]);
+  }, [itens, busca, ordenacao, setorSelecionado]);
 
   useEffect(() => {
     if (!loading && listaItensCriticos.length > 0 && !alertaVisualizado) {
@@ -293,12 +310,63 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         },
       });
 
-      alert('Produto atualizado com sucesso!');
+      alert('Produto updated com sucesso!');
       setItemSelecionado(null);
       carregarItens();
       carregarMovimentacoes();
     } catch (error) {
       alert('Erro ao atualizar o produto.');
+    }
+  };
+
+  const handleMovimentacaoRapida = (item, tipo) => {
+    setItemRapidoSelecionado(item);
+    setTipoRapido(tipo);
+    setQuantidadeRapida('');
+    setModalRapidoVisivel(true);
+  };
+
+  const confirmarMovimentacaoRapida = async () => {
+    if (!itemRapidoSelecionado) return;
+    
+    const quantidadeNum = Number(quantidadeRapida);
+    if (isNaN(quantidadeNum) || quantidadeNum <= 0) {
+      alert('Por favor, digite um número válido e maior que zero.');
+      return;
+    }
+
+    let novaQuantidadeAtual = Number(itemRapidoSelecionado.quantidade_atual);
+    if (tipoRapido === 'ENTRADA') {
+      novaQuantidadeAtual += quantidadeNum;
+    } else {
+      if (novaQuantidadeAtual - quantidadeNum < 0) {
+        alert('Operação negada: Quantidade insuficiente em estoque.');
+        return;
+      }
+      novaQuantidadeAtual -= quantidadeNum;
+    }
+
+    try {
+      await axios.post(`${API_URL}/movimentacoes/`, {
+        item: itemRapidoSelecionado.id,
+        tipo: tipoRapido,
+        quantidade: quantidadeNum,
+        observacao: `Movimentação rápida via painel geral`,
+      }, {
+        headers: { Authorization: `Token ${token}` },
+      });
+
+      await axios.patch(`${API_URL}/itens/${itemRapidoSelecionado.id}/`, {
+        quantidade_atual: novaQuantidadeAtual
+      }, {
+        headers: { Authorization: `Token ${token}` },
+      });
+
+      setModalRapidoVisivel(false);
+      carregarItens();
+      carregarMovimentacoes();
+    } catch (error) {
+      alert('Erro ao salvar movimentação no banco de dados.');
     }
   };
 
@@ -345,7 +413,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
               {[
                 { id: 'dashboard', label: 'Visão Geral', desc: 'Métricas e Gráficos' },
                 { id: 'produtos', label: 'Inventário', desc: 'Gestão de estoque' },
-                { id: 'setores', label: 'Setores', desc: 'Gestão de áreas' }, // <-- TEXTO ATUALIZADO
+                { id: 'setores', label: 'Setores', desc: 'Gestão de áreas' },
                 { id: 'movimentacoes', label: 'Movimentações', desc: 'Histórico de auditoria' },
               ].map((item) => {
                 const ativo = abaAtiva === item.id;
@@ -397,14 +465,58 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
           <ScrollView contentContainerStyle={modernStyles.scrollContent}>
             
+            {/* NOVO: Barra de Filtros Inteligentes por Setor */}
+            {abaAtiva === 'dashboard' && (
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ color: '#64748B', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>
+                  Filtro Analítico
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 20 }}>
+                  <TouchableOpacity
+                    onPress={() => setSetorSelecionado('todos')}
+                    style={{
+                      backgroundColor: setorSelecionado === 'todos' ? '#0F172A' : '#FFFFFF',
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: setorSelecionado === 'todos' ? '#0F172A' : '#E2E8F0',
+                    }}
+                  >
+                    <Text style={{ color: setorSelecionado === 'todos' ? '#FFF' : '#475569', fontWeight: '600', fontSize: 13 }}>
+                      Visão Global
+                    </Text>
+                  </TouchableOpacity>
+                  {setores.map(setor => (
+                    <TouchableOpacity
+                      key={setor.key}
+                      onPress={() => setSetorSelecionado(setor.key)}
+                      style={{
+                        backgroundColor: setorSelecionado === setor.key ? '#0EA5E9' : '#FFFFFF',
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        borderWidth: 1,
+                        borderColor: setorSelecionado === setor.key ? '#0EA5E9' : '#E2E8F0',
+                      }}
+                    >
+                      <Text style={{ color: setorSelecionado === setor.key ? '#FFF' : '#475569', fontWeight: '600', fontSize: 13 }}>
+                        {setor.nome}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
             {listaItensCriticos.length > 0 && abaAtiva === 'dashboard' && (
-              <View style={{ backgroundColor: '#FEF2F2', borderColor: '#FEE2E2', borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ backgroundColor: '#FEF2F2', borderColor: '#FEE2E2', borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifySetorContent: 'space-between' }}>
                 <View style={{ flex: 1, marginRight: 16 }}>
                   <Text style={{ color: '#991B1B', fontWeight: '700', fontSize: 14, marginBottom: 2 }}>
                     Ruptura Iminente de Estoque
                   </Text>
                   <Text style={{ color: '#7F1D1D', fontSize: 13, opacity: 0.9 }}>
-                    Há {listaItensCriticos.length} produtos operando abaixo do limite mínimo de segurança configurado.
+                    Há {listaItensCriticos.length} produtos operando abaixo do limite mínimo {setorSelecionado !== 'todos' ? 'neste setor' : 'configurado'}.
                   </Text>
                 </View>
                 <TouchableOpacity 
@@ -417,21 +529,22 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
             )}
 
             <View style={[modernStyles.metricsGrid, { marginBottom: 24 }]}>
-              <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens no catálogo" />
+              <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens encontrados" />
               <MetricCard
                 label="Críticos"
                 value={indicadores.itensCriticos}
                 hint="abaixo do mínimo"
                 danger={indicadores.itensCriticos > 0}
               />
-              <MetricCard label="Setores" value={indicadores.setores} hint="áreas mapeadas" />
+              <MetricCard label="Setores" value={indicadores.setores} hint="áreas envolvidas" />
               <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
             </View>
 
             <View style={{ width: '100%', marginTop: 8 }}>
               
+              {/* O ManagerCharts agora recebe as listas filtradas para refletir exatamente a visão do Setor */}
               {abaAtiva === 'dashboard' && (
-                <ManagerCharts gruposPorSetor={gruposPorSetor} itens={itens} />
+                <ManagerCharts gruposPorSetor={gruposPorSetor} itens={itensFiltrados} />
               )}
 
               {abaAtiva === 'produtos' && (
@@ -449,10 +562,10 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
                   ordenacao={ordenacao}
                   onOrdenacaoChange={setOrdenacao}
                   onNovoProduto={() => setModalProdutoVisivel(true)}
+                  onMovimentacaoRapida={handleMovimentacaoRapida}
                 />
               )}
 
-              {/* LÓGICA ATUALIZADA DA ABA DE SETORES: 2 COLUNAS */}
               {abaAtiva === 'setores' && (
                 <View style={{ width: '100%' }}>
                   <SectorList 
@@ -474,7 +587,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
       </View>
 
-      {/* MODAL DE ALERTAS E RESTANTE DOS MODAIS OMITIDOS PARA BREVIDADE, MAS INTACTOS NO SEU CÓDIGO ORIGINAL */}
       <Modal
         visible={modalAlertasVisivel}
         transparent={true}
@@ -500,7 +612,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
               {listaItensCriticos.map((item) => (
                 <View 
                   key={item.id || item.nome}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, backgroundColor: '#FFF5F5', borderRadius: 8, borderWidth: 1, borderColor: '#FEE2E2', marginBottom: 8 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifySetorContent: 'space-between', padding: 12, backgroundColor: '#FFF5F5', borderRadius: 8, borderWidth: 1, borderColor: '#FEE2E2', marginBottom: 8 }}
                 >
                   <View style={{ flex: 1, marginRight: 8 }}>
                     <Text style={{ fontSize: 14, fontWeight: '600', color: '#1E293B' }}>{item.nome}</Text>
@@ -518,7 +630,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
               ))}
             </ScrollView>
 
-            <View style={{ padding: 20, borderTopWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', justifyContent: 'flex-end' }}>
+            <View style={{ padding: 20, borderTopWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', justifySetorContent: 'flex-end' }}>
               <TouchableOpacity
                 onPress={() => setModalAlertasVisivel(false)}
                 style={{ backgroundColor: '#0F172A', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 }}
@@ -567,6 +679,98 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         onMaryPatch={handleMaryPatch}
         listaSetores={listaSetores}
       />
+
+      {/* MODAL DE MOVIMENTAÇÃO RÁPIDA */}
+      <Modal
+        visible={modalRapidoVisivel}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalRapidoVisivel(false)}
+      >
+        <View style={modernStyles.modalOverlay}>
+          <View style={{ 
+            width: '90%', 
+            maxWidth: 440, 
+            backgroundColor: '#FFFFFF', 
+            borderRadius: 16, 
+            borderWidth: 1, 
+            borderColor: '#E2E8F0',
+            overflow: 'hidden',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.1,
+            shadowRadius: 20,
+            elevation: 6
+          }}>
+            <View style={{ 
+              flexDirection: 'row', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              paddingHorizontal: 24,
+              paddingTop: 24,
+              paddingBottom: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: '#F1F5F9'
+            }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#0F172A' }}>
+                {tipoRapido === 'ENTRADA' ? 'Entrada Rápida' : 'Saída Rápida'}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setModalRapidoVisivel(false)} 
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ color: '#64748B', fontWeight: 'bold', fontSize: 13 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ padding: 24 }}>
+              <Text style={{ color: '#334155', fontSize: 13, fontWeight: '600', marginBottom: 6 }}>
+                Produto Selecionado
+              </Text>
+              <View style={{ backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16 }}>
+                <Text style={{ color: '#475569', fontSize: 14, fontWeight: '500' }}>
+                  {itemRapidoSelecionado?.nome}
+                </Text>
+              </View>
+
+              <Text style={{ color: '#334155', fontSize: 13, fontWeight: '600', marginBottom: 6 }}>
+                Quantidade Real
+              </Text>
+              <TextInput
+                style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#0F172A' }}
+                placeholder="0"
+                placeholderTextColor="#94A3B8"
+                keyboardType="numeric"
+                value={quantidadeRapida}
+                onChangeText={setQuantidadeRapida}
+                autoFocus={true}
+              />
+
+              <TouchableOpacity
+                onPress={confirmarMovimentacaoRapida}
+                style={{ 
+                  backgroundColor: tipoRapido === 'ENTRADA' ? '#0EA5E9' : '#EF4444', 
+                  paddingVertical: 13, 
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: 24,
+                  shadowColor: '#0EA5E9',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 4,
+                }}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {tipoRapido === 'ENTRADA' ? 'CONFIRMAR ENTRADA' : 'CONFIRMAR SAÍDA'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
