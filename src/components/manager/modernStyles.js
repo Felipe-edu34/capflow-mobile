@@ -274,17 +274,23 @@ const modernStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
+
   dropdownItemActive: {
-    backgroundColor: '#F0F7FF',
+    backgroundColor: '#E0F2FE', // Fundo azul claro para o item selecionado
+    borderLeftWidth: 3,
+    borderLeftColor: '#0EA5E9',
   },
+  
+  dropdownItemTextActive: {
+    color: '#0369A1',
+    fontWeight: '800', // Negrito no texto selecionado
+  },
+
   dropdownItemText: {
     color: '#334155',
     fontSize: 14,
   },
-  dropdownItemTextActive: {
-    color: '#0EA5E9',
-    fontWeight: '600',
-  },
+
 
   // SEÇÃO IMAGEM
   imageUploadBox: {
@@ -465,25 +471,35 @@ const modernStyles = StyleSheet.create({
     sectorBlock: {
       marginBottom: 32,
     },
+    // --- ATUALIZE ESTAS CLASSES DE SETOR ---
     sectorHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'flex-end',
+      alignItems: 'center',
       marginBottom: 16,
-      paddingBottom: 8,
-      borderBottomWidth: 1,
-      borderColor: '#F1F5F9',
+      marginTop: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: '#F1F5F9', // Fundo leve para separar do fundo branco dos produtos
+      borderLeftWidth: 4,
+      borderLeftColor: '#0EA5E9', // Marcador visual azul
+      borderRadius: 8,
     },
     sectorTitle: {
-      fontSize: 18,
-      fontWeight: '800',
-      color: '#1E293B',
+      fontSize: 16,
+      fontWeight: '900',
+      color: '#0F172A',
+      textTransform: 'uppercase', // Deixa tudo em maiúsculo
+      letterSpacing: 1,
     },
     sectorMeta: {
       fontSize: 13,
-      color: '#94A3B8',
+      fontWeight: '600',
+      color: '#64748B',
       marginTop: 2,
     },
+
+
     sectorCritical: {
       fontSize: 12,
       fontWeight: '700',

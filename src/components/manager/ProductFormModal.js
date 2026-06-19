@@ -152,7 +152,7 @@ export default function ProductFormModal({
             />
             {erros.minimo && <Text style={modernStyles.formError}>{erros.minimo}</Text>}
 
-            {/* SETOR DE DESTINO - DROPDOWN CUSTOMIZADO (ZERO DEPENDÊNCIAS) */}
+            {/* SETOR DE DESTINO - DROPDOWN CUSTOMIZADO */}
             <Text style={modernStyles.formLabel}>Setor de Destino</Text>
             <TouchableOpacity
               style={[
@@ -170,51 +170,39 @@ export default function ProductFormModal({
               <Text style={{ color: '#64748B', fontSize: 10 }}>{setorDropdownAberto ? '▲' : '▼'}</Text>
             </TouchableOpacity>
 
+            {/* LISTA DO DROPDOWN COM DESTAQUE ATUALIZADO */}
             {setorDropdownAberto && (
-              <View style={{ 
-                backgroundColor: '#FFFFFF', 
-                borderWidth: 1, 
-                borderColor: '#CBD5E1', 
-                borderRadius: 10, 
-                marginTop: 6, 
-                overflow: 'hidden',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 4,
-                elevation: 2
-              }}>
+              <ScrollView style={modernStyles.dropdownContainer} nestedScrollEnabled={true}>
                 {listaSetores.length === 0 ? (
                   <View style={{ padding: 12 }}>
                     <Text style={{ color: '#94A3B8', fontSize: 13 }}>Nenhum setor cadastrado</Text>
                   </View>
                 ) : (
-                  listaSetores.map((setor) => (
-                    <TouchableOpacity
-                      key={setor.id}
-                      style={{ 
-                        paddingHorizontal: 14, 
-                        paddingVertical: 12, 
-                        borderBottomWidth: 1, 
-                        borderBottomColor: '#F1F5F9', 
-                        backgroundColor: form.setorId === setor.id ? '#F8FAFC' : '#FFFFFF' 
-                      }}
-                      onPress={() => {
-                        handleInputChange('setorId', setor.id);
-                        setSetorDropdownAberto(false);
-                      }}
-                    >
-                      <Text style={{ 
-                        color: '#0F172A', 
-                        fontSize: 14, 
-                        fontWeight: form.setorId === setor.id ? '700' : '500' 
-                      }}>
-                        {setor.nome}
-                      </Text>
-                    </TouchableOpacity>
-                  ))
+                  listaSetores.map((setor) => {
+                    const isSelected = form.setorId === setor.id;
+                    return (
+                      <TouchableOpacity
+                        key={setor.id}
+                        style={[
+                          modernStyles.dropdownItem,
+                          isSelected && modernStyles.dropdownItemActive
+                        ]}
+                        onPress={() => {
+                          handleInputChange('setorId', setor.id);
+                          setSetorDropdownAberto(false);
+                        }}
+                      >
+                        <Text style={[
+                          modernStyles.dropdownItemText,
+                          isSelected && modernStyles.dropdownItemTextActive
+                        ]}>
+                          {setor.nome}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })
                 )}
-              </View>
+              </ScrollView>
             )}
             {erros.setorId && <Text style={modernStyles.formError}>{erros.setorId}</Text>}
 
