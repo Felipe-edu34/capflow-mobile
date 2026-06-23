@@ -56,9 +56,12 @@ function ProductCard({ item, baseUrl, onPress, onMovimentacaoRapida }) {
                 </View>
               )}
             </View>
+            
+            {/* CORREÇÃO DO SETOR/SUBSETOR AQUI */}
             <Text style={styles.productMeta} numberOfLines={1}>
-              Setor {item.setor_nome || item.setor || 'Sem setor'} | Mínimo {item.estoque_minimo} {item.unidade_medida}
+              📍 {item.subsetor_nome ? `Subsetor ${item.subsetor_nome}` : `Setor ${item.setor_nome || item.setor || 'Sem setor'}`} | Mínimo {item.estoque_minimo} {item.unidade_medida || 'UN'}
             </Text>
+
           </View>
         </View>
       </TouchableOpacity>
@@ -141,8 +144,9 @@ export default function InventorySection({
 }) {
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
+  // CORREÇÃO DO ERRO 'g is not defined' (linha abaixo)
   const gruposVisiveis =
-    setorSelecionado === 'todos' ? grupos : grupos.filter((grupo) => g.key === setorSelecionado);
+    setorSelecionado === 'todos' ? grupos : grupos.filter((grupo) => grupo.key === setorSelecionado);
 
   const labelOrdenacaoAtual = {
     alfabetica: 'Nome (A-Z)',
