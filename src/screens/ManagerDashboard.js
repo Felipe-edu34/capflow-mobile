@@ -12,6 +12,7 @@ import SectorList from '../components/manager/SectorList';
 import ManagerCharts from '../components/manager/ManagerCharts'; 
 import ProductFormModal from '../components/manager/ProductFormModal';
 import modernStyles from '../components/manager/modernStyles';
+import SubSectorFormModal from '../components/manager/SubSectorFormModal';
 
 const API_URL = 'http://127.0.0.1:8000/api';
 const BASE_URL = 'http://127.0.0.1:8000';
@@ -26,6 +27,7 @@ const initialProductForm = {
 };
 
 const initialSectorForm = {
+  id: null,
   nome: '',
   responsavelId: '',
 };
@@ -45,6 +47,16 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [itens, setItens] = useState([]);
   const [sidebarAberta, setSidebarAberta] = useState(true);
   const [listaSetores, setListaSetores] = useState([]);
+  const [listaSubsetores, setListaSubsetores] = useState([]);
+  const [modalSubsetorVisivel, setModalSubsetorVisivel] = useState(false);
+  const [salvandoSubsetor, setSalvandoSubsetor] = useState(false);
+
+  const initialSubsetorForm = {
+  id: null,
+  nome: '',
+  setorPaiId: '',
+  };
+  const [formSubsetor, setFormSubsetor] = useState(initialSubsetorForm);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [itemSelecionado, setItemSelecionado] = useState(null);
@@ -90,6 +102,17 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
+  const carregarSubsetores = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/subsetores/`, {
+      headers: { Authorization: `Token ${token}` },
+    });
+    setListaSubsetores(response.data);
+    } catch (error) {
+    console.log("Erro ao carregar sub-setores:", error);
+    }
+  };
+
   const carregarMovimentacoes = async () => {
     try {
       const response = await axios.get(`${API_URL}/movimentacoes/`, {
@@ -106,6 +129,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarItens();
       carregarSetores();
       carregarMovimentacoes();
+      carregarSubsetores();
     }
   }, [token]);
 
@@ -222,7 +246,26 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     formData.append('quantidade_atual', formProduto.quantidade);
     formData.append('unidade_medida', formProduto.unidade || 'UN');
     formData.append('estoque_minimo', formProduto.minimo);
-    formData.append('setor', formProduto.setorId);
+
+    // --- NOVA LÓGICA INTELIGENTE PARA SETOR E SUB-SETOR ---
+    // Procura se o ID selecionado pertence à lista de sub-setores
+    const subSetorSelecionado = listaSubsetores.find(sub => sub.id === formProduto.setorId);
+    const setorPrincipalSelecionado = listaSetores.find(setor => setor.id === formProduto.setorId);
+
+    if (subSetorSelecionado) {
+      // Se for um sub-setor, descobrimos quem é o setor pai dele
+      const paiId = subSetorSelecionado.setorPaiId || subSetorSelecionado.setor_pai || subSetorSelecionado.setor_id;
+      
+      formData.append('setor', paiId);              // Envia o ID do Setor Pai
+      formData.append('subsetor', subSetorSelecionado.id); // Envia o ID do Sub-setor exigido pela API
+    } else if (setorPrincipalSelecionado) {
+      // Se selecionou o setor geral diretamente, enviamos o ID dele no setor
+      formData.append('setor', setorPrincipalSelecionado.id);
+      // Como o banco exige um sub-setor, enviamos vazio para testar se ele aceita, 
+      // mas o ideal é que você selecione sempre a sub-opção na hora de testar!
+      formData.append('subsetor', ''); 
+    }
+    // ------------------------------------------------------
 
     if (imagem) formData.append('imagem', imagem);
 
@@ -248,7 +291,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
-  const handleCadastrarSetor = async () => {
+  const handleSalvarSetor = async () => {
     if (!formSetor.nome) {
       alert('Por favor, digite o nome do setor.');
       return;
@@ -259,20 +302,123 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     if (formSetor.responsavelId) payload.responsavel = formSetor.responsavelId;
 
     try {
-      await axios.post(`${API_URL}/setores/`, payload, {
-        headers: { Authorization: `Token ${token}` },
-      });
-
-      alert('Setor operacional criado com sucesso!');
+      if (formSetor.id) {
+        // Modo Edição (Atualizar)
+        await axios.patch(`${API_URL}/setores/${formSetor.id}/`, payload, {
+          headers: { Authorization: `Token ${token}` },
+        });
+        alert('Setor atualizado com sucesso!');
+      } else {
+        // Modo Criação (Cadastrar)
+        await axios.post(`${API_URL}/setores/`, payload, {
+          headers: { Authorization: `Token ${token}` },
+        });
+        alert('Setor criado com sucesso!');
+      }
+      
       setFormSetor(initialSectorForm);
       setModalSetorVisivel(false);
       carregarItens();
       carregarSetores();
     } catch (error) {
-      alert('Erro ao criar setor.');
+      alert('Erro ao salvar o setor.');
+      console.log(error);
     } finally {
       setSalvando(false);
     }
+  };
+
+  const handleSalvarSubsetor = async () => {
+  if (!formSubsetor.nome || !formSubsetor.setorPaiId) {
+    alert('Por favor, preencha o nome e selecione o setor pai.');
+    return;
+  }
+
+  setSalvandoSubsetor(true);
+  const payload = {
+    nome: formSubsetor.nome,
+    setor_pai: formSubsetor.setorPaiId
+  };
+
+  try {
+    if (formSubsetor.id) {
+      // Editar Sub-setor
+      await axios.patch(`${API_URL}/subsetores/${formSubsetor.id}/`, payload, {
+        headers: { Authorization: `Token ${token}` },
+      });
+      alert('Sub-setor atualizado!');
+    } else {
+      // Criar Sub-setor
+      await axios.post(`${API_URL}/subsetores/`, payload, {
+        headers: { Authorization: `Token ${token}` },
+      });
+      alert('Sub-setor criado com sucesso!');
+    }
+    setFormSubsetor(initialSubsetorForm);
+    setModalSubsetorVisivel(false);
+    carregarSubsetores();
+    carregarItens(); // Atualiza o painel geral
+  } catch (error) {
+    alert('Erro ao salvar sub-setor.');
+    console.log(error);
+  } finally {
+    setSalvandoSubsetor(false);
+  }
+};
+
+const handleExcluirSubsetor = async (idSubsetor) => {
+  const confirmar = window?.confirm ? window.confirm('Deseja excluir este sub-setor?') : true;
+  if (!confirmar) return;
+
+  try {
+    await axios.delete(`${API_URL}/subsetores/${idSubsetor}/`, {
+      headers: { Authorization: `Token ${token}` },
+    });
+    alert('Sub-setor excluído!');
+    carregarSubsetores();
+    carregarItens();
+  } catch (error) {
+    alert('Erro ao excluir. Verifique se há produtos vinculados a este sub-setor.');
+  }
+};
+
+const abrirModalEdicaoSubsetor = (sub) => {
+  setFormSubsetor({
+    id: sub.id,
+    nome: sub.nome,
+    setorPaiId: sub.setor_pai,
+  });
+  setModalSubsetorVisivel(true);
+  };
+
+  const handleExcluirSetor = async (idSetor) => {
+    const confirmar = window?.confirm 
+      ? window.confirm('Deseja realmente excluir este setor? Atenção: Isso pode afetar os produtos vinculados a ele.') 
+      : true;
+      
+    if (!confirmar) return;
+
+    try {
+      await axios.delete(`${API_URL}/setores/${idSetor}/`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+      alert('Setor excluído com sucesso!');
+      carregarItens();
+      carregarSetores();
+    } catch (error) {
+      alert('Erro ao excluir o setor. Verifique se existem produtos ainda vinculados a ele no banco de dados.');
+      console.log(error);
+    }
+  };
+
+  // Função auxiliar para abrir o modal preenchido
+  const abrirModalEdicaoSetor = (setor) => {
+    setFormSetor({
+      id: setor.id,
+      nome: setor.nome,
+      responsavelId: setor.responsavel || '',
+    });
+    setModalSetorVisivel(true);
   };
 
   const handleExcluirProduto = async (idProduto) => {
@@ -570,11 +716,26 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
                 <View style={{ width: '100%' }}>
                   <SectorList 
                     setores={listaSetores} 
+                    subsetores={listaSubsetores} // NOVO
                     itens={itens} 
-                    onNovoSetor={() => setModalSetorVisivel(true)}
+                    onNovoSetor={() => {
+                      setFormSetor(initialSectorForm);
+                      setModalSetorVisivel(true);
+                    }}
+                    onEditarSetor={abrirModalEdicaoSetor}
+                    onExcluirSetor={handleExcluirSetor}
+                    
+                    // NOVAS PROPS PARA SUB-SETORES:
+                    onNovoSubsetor={() => {
+                      setFormSubsetor({ id: null, nome: '', setorPaiId: '' }); // Usando objeto inicial limpo
+                      setModalSubsetorVisivel(true);
+                    }}
+                    onEditarSubsetor={abrirModalEdicaoSubsetor}
+                    onExcluirSubsetor={handleExcluirSubsetor}
                   />
                 </View>
               )}
+              
 
               {abaAtiva === 'movimentacoes' && (
                 <MovementHistory movimentacoes={movimentacoes} />
@@ -642,6 +803,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         </View>
       </Modal>
       
+      {/* MODAL DE SETORES */}
       <SectorFormModal
         visible={modalSetorVisivel}
         onClose={() => {
@@ -650,8 +812,22 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         }}
         form={formSetor}
         setFormValue={setSectorFormValue}
-        onSubmit={handleCadastrarSetor}
+        onSubmit={handleSalvarSetor}
         salvando={salvando}
+      />
+
+      {/* O NOSSO NOVO MODAL DE SUB-SETORES */}
+      <SubSectorFormModal
+        visible={modalSubsetorVisivel}
+        onClose={() => {
+          setModalSubsetorVisivel(false);
+          setFormSubsetor({ id: null, nome: '', setorPaiId: '' });
+        }}
+        form={formSubsetor}
+        setFormValue={(campo, valor) => setFormSubsetor({...formSubsetor, [campo]: valor})}
+        setores={listaSetores} 
+        onSubmit={handleSalvarSubsetor}
+        salvando={salvandoSubsetor}
       />
 
       <ProductFormModal
@@ -668,6 +844,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         onSubmit={handleCadastrarProduto}
         salvando={salvando}
         listaSetores={listaSetores}
+        listaSubsetores={listaSubsetores} // <--- O SEGREDO ESTAVA AQUI! (adicione a palavra 'lista' no valor também)
       />
 
       <ProductDetailModal
