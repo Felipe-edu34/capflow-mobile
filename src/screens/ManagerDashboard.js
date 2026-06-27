@@ -10,7 +10,8 @@ import ManagerHeader from '../components/manager/ManagerHeader';
 import ManagerSidebar from '../components/manager/ManagerSidebar';
 import DashboardFilters from '../components/manager/DashboardFilters';
 import MetricCard from '../components/manager/MetricCard';
-import ManagerCharts from '../components/manager/ManagerCharts'; 
+import ManagerCharts from '../components/manager/ManagerCharts';
+import FuncionariosScreen from '../screens/FuncionariosScreen'; 
 
 // --- COMPONENTES DE LISTAGEM ---
 import InventorySection from '../components/manager/InventorySection';
@@ -531,198 +532,208 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   return (
-    <SafeAreaView style={modernStyles.container}>
+  <SafeAreaView style={modernStyles.container}>
+    
+    {/* 1. COMPONENTE HEADER */}
+    <ManagerHeader 
+      listaItensCriticos={listaItensCriticos} 
+      onAbrirAlertas={() => setModalAlertasVisivel(true)} 
+    />
+
+    <View style={{ flex: 1, flexDirection: 'row' }}>
       
-      {/* 1. COMPONENTE HEADER */}
-      <ManagerHeader 
-        listaItensCriticos={listaItensCriticos} 
-        onAbrirAlertas={() => setModalAlertasVisivel(true)} 
+      {/* 2. COMPONENTE SIDEBAR */}
+      <ManagerSidebar 
+        sidebarAberta={sidebarAberta}
+        abaAtiva={abaAtiva}
+        setAbaAtiva={setAbaAtiva}
+        perfil={perfil}
+        handleLogout={handleLogout}
       />
 
-      <View style={{ flex: 1, flexDirection: 'row' }}>
+      {/* ÁREA CENTRAL */}
+      <View style={{ flex: 1, flexDirection: 'column' }}>
         
-        {/* 2. COMPONENTE SIDEBAR */}
-        <ManagerSidebar 
-          sidebarAberta={sidebarAberta}
-          abaAtiva={abaAtiva}
-          setAbaAtiva={setAbaAtiva}
-          perfil={perfil}
-          handleLogout={handleLogout}
-        />
-
-        {/* ÁREA CENTRAL */}
-        <View style={{ flex: 1, flexDirection: 'column' }}>
-          
-          {/* Barra de Título */}
-          <View style={modernStyles.topBar}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              <TouchableOpacity onPress={() => setSidebarAberta(!sidebarAberta)} style={modernStyles.toggleButton}>
-                <Text style={modernStyles.toggleButtonText}>{sidebarAberta ? '✕' : '☰'}</Text>
-              </TouchableOpacity>
-              <Text style={modernStyles.pageHeading}>
-                Painel Geral / {abaAtiva === 'dashboard' ? 'Visão Geral' : abaAtiva}
-              </Text>
-            </View>
-            <View style={modernStyles.badgeStatus}>
-              <Text style={modernStyles.badgeStatusText}>Gestor Ativo</Text>
-            </View>
+        {/* Barra de Título */}
+        <View style={modernStyles.topBar}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <TouchableOpacity onPress={() => setSidebarAberta(!sidebarAberta)} style={modernStyles.toggleButton}>
+              <Text style={modernStyles.toggleButtonText}>{sidebarAberta ? '✕' : '☰'}</Text>
+            </TouchableOpacity>
+            <Text style={modernStyles.pageHeading}>
+              Painel Geral / {
+                abaAtiva === 'dashboard' ? 'Visão Geral' : 
+                abaAtiva === 'produtos' ? 'Inventário' :
+                abaAtiva === 'setores' ? 'Setores' :
+                abaAtiva === 'movimentacoes' ? 'Movimentações' :
+                abaAtiva === 'funcionarios' ? 'Equipe' : abaAtiva
+              }
+            </Text>
           </View>
+          <View style={modernStyles.badgeStatus}>
+            <Text style={modernStyles.badgeStatusText}>Gestor Ativo</Text>
+          </View>
+        </View>
 
-          <ScrollView contentContainerStyle={modernStyles.scrollContent}>
+        <ScrollView contentContainerStyle={modernStyles.scrollContent}>
+          
+          {/* 3. COMPONENTE DE FILTROS (Só aparece no Dashboard) */}
+          {abaAtiva === 'dashboard' && (
+            <DashboardFilters 
+              setores={setores}
+              setorSelecionado={setorSelecionado}
+              setSetorSelecionado={setSetorSelecionado}
+              listaItensCriticos={listaItensCriticos}
+              onAbrirAlertas={() => setModalAlertasVisivel(true)}
+            />
+          )}
+
+          {/* GRIDS DE MÉTRICAS (Só aparece no Dashboard) */}
+          {abaAtiva === 'dashboard' && (
+            <View style={[modernStyles.metricsGrid, { marginBottom: 24 }]}>
+              <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens encontrados" />
+              <MetricCard
+                label="Críticos"
+                value={indicadores.itensCriticos}
+                hint="abaixo do mínimo"
+                danger={indicadores.itensCriticos > 0}
+              />
+              <MetricCard label="Setores" value={indicadores.setores} hint="areas envolvidas" />
+              <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
+            </View>
+          )}
+
+          {/* RENDERIZAÇÃO CONDICIONAL DAS ABAS */}
+          <View style={{ width: '100%', marginTop: 8 }}>
             
-            {/* 3. COMPONENTE DE FILTROS (Só aparece no Dashboard) */}
             {abaAtiva === 'dashboard' && (
-              <DashboardFilters 
+              <ManagerCharts gruposPorSetor={gruposPorSetor} itens={itensFiltrados} />
+            )}
+
+            {abaAtiva === 'produtos' && (
+              <InventorySection
+                grupos={gruposPorSetor}
                 setores={setores}
                 setorSelecionado={setorSelecionado}
-                setSetorSelecionado={setSetorSelecionado}
-                listaItensCriticos={listaItensCriticos}
-                onAbrirAlertas={() => setModalAlertasVisivel(true)}
+                onSelecionarSetor={setSetorSelecionado}
+                busca={busca}
+                onBuscaChange={setBusca}
+                loading={loading}
+                totalItens={indicadores.totalItens}
+                baseUrl={BASE_URL}
+                onOpenItem={setItemSelecionado}
+                ordenacao={ordenacao}
+                onOrdenacaoChange={setOrdenacao}
+                onNovoProduto={() => setModalProdutoVisivel(true)}
+                onMovimentacaoRapida={handleMovimentacaoRapida}
               />
             )}
 
-            {/* GRIDS DE MÉTRICAS (Só aparece no Dashboard) */}
-            {abaAtiva === 'dashboard' && (
-              <View style={[modernStyles.metricsGrid, { marginBottom: 24 }]}>
-                <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens encontrados" />
-                <MetricCard
-                  label="Críticos"
-                  value={indicadores.itensCriticos}
-                  hint="abaixo do mínimo"
-                  danger={indicadores.itensCriticos > 0}
-                />
-                <MetricCard label="Setores" value={indicadores.setores} hint="áreas envolvidas" />
-                <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
-              </View>
+            {abaAtiva === 'setores' && (
+              <SectorList 
+                setores={listaSetores} 
+                subsetores={listaSubsetores} 
+                itens={itens} 
+                onNovoSetor={() => {
+                  setFormSetor(initialSectorForm);
+                  setModalSetorVisivel(true);
+                }}
+                onEditarSetor={abrirModalEdicaoSetor}
+                onExcluirSetor={handleExcluirSetor}
+                onNovoSubsetor={() => {
+                  setFormSubsetor({ id: null, nome: '', setorPaiId: '' }); 
+                  setModalSubsetorVisivel(true);
+                }}
+                onEditarSubsetor={abrirModalEdicaoSubsetor}
+                onExcluirSubsetor={handleExcluirSubsetor}
+              />
             )}
 
-            {/* RENDERIZAÇÃO CONDICIONAL DAS ABAS */}
-            <View style={{ width: '100%', marginTop: 8 }}>
-              
-              {abaAtiva === 'dashboard' && (
-                <ManagerCharts gruposPorSetor={gruposPorSetor} itens={itensFiltrados} />
-              )}
-
-              {abaAtiva === 'produtos' && (
-                <InventorySection
-                  grupos={gruposPorSetor}
-                  setores={setores}
-                  setorSelecionado={setorSelecionado}
-                  onSelecionarSetor={setSetorSelecionado}
-                  busca={busca}
-                  onBuscaChange={setBusca}
-                  loading={loading}
-                  totalItens={indicadores.totalItens}
-                  baseUrl={BASE_URL}
-                  onOpenItem={setItemSelecionado}
-                  ordenacao={ordenacao}
-                  onOrdenacaoChange={setOrdenacao}
-                  onNovoProduto={() => setModalProdutoVisivel(true)}
-                  onMovimentacaoRapida={handleMovimentacaoRapida}
-                />
-              )}
-
-              {abaAtiva === 'setores' && (
-                <SectorList 
-                  setores={listaSetores} 
-                  subsetores={listaSubsetores} 
-                  itens={itens} 
-                  onNovoSetor={() => {
-                    setFormSetor(initialSectorForm);
-                    setModalSetorVisivel(true);
-                  }}
-                  onEditarSetor={abrirModalEdicaoSetor}
-                  onExcluirSetor={handleExcluirSetor}
-                  onNovoSubsetor={() => {
-                    setFormSubsetor({ id: null, nome: '', setorPaiId: '' }); 
-                    setModalSubsetorVisivel(true);
-                  }}
-                  onEditarSubsetor={abrirModalEdicaoSubsetor}
-                  onExcluirSubsetor={handleExcluirSubsetor}
-                />
-              )}
-
-              {abaAtiva === 'movimentacoes' && (
+            {abaAtiva === 'movimentacoes' && (
               <MovementHistory movimentacoes={movimentacoes} itens={itens} />
-              )}
+            )}
 
-            </View>
-          </ScrollView>
-        </View>
+            {/* 👥 CORREÇÃO: Injetado o FuncionariosScreen mapeado ao id 'funcionarios' */}
+            {abaAtiva === 'funcionarios' && (
+              <FuncionariosScreen token={token} />
+            )}
+
+          </View>
+        </ScrollView>
       </View>
+    </View>
 
-      {/* COMPONENTES DE MODAIS AQUI (Já modularizados anteriormente) */}
-  
-      <CriticalAlertsModal
-        visible={modalAlertasVisivel}
-        onClose={() => setModalAlertasVisivel(false)}
-        itensCriticos={listaItensCriticos}
-        getSetorNome={getSetorNome}
-        listaSubsetores={listaSubsetores}
-      />
-      
-      <SectorFormModal
-        visible={modalSetorVisivel}
-        onClose={() => {
-          setModalSetorVisivel(false);
-          setFormSetor(initialSectorForm);
-        }}
-        form={formSetor}
-        setFormValue={setSectorFormValue}
-        onSubmit={handleSalvarSetor}
-        salvando={salvando}
-      />
+    {/* COMPONENTES DE MODAIS AQUI */}
 
-      <SubSectorFormModal
-        visible={modalSubsetorVisivel}
-        onClose={() => {
-          setModalSubsetorVisivel(false);
-          setFormSubsetor({ id: null, nome: '', setorPaiId: '' });
-        }}
-        form={formSubsetor}
-        setFormValue={(campo, valor) => setFormSubsetor({...formSubsetor, [campo]: valor})}
-        setores={listaSetores} 
-        onSubmit={handleSalvarSubsetor}
-        salvando={salvandoSubsetor}
-      />
+    <CriticalAlertsModal
+      visible={modalAlertasVisivel}
+      onClose={() => setModalAlertasVisivel(false)}
+      itensCriticos={listaItensCriticos}
+      getSetorNome={getSetorNome}
+      listaSubsetores={listaSubsetores}
+    />
+    
+    <SectorFormModal
+      visible={modalSetorVisivel}
+      onClose={() => {
+        setModalSetorVisivel(false);
+        setFormSetor(initialSectorForm);
+      }}
+      form={formSetor}
+      setFormValue={setSectorFormValue}
+      onSubmit={handleSalvarSetor}
+      salvando={salvando}
+    />
 
-      <ProductFormModal
-        visible={modalProdutoVisivel}
-        onClose={() => {
-          setModalProdutoVisivel(false);
-          setFormProduto(initialProductForm);
-          setImagem(null);
-        }}
-        form={formProduto}
-        setFormValue={setProductFormValue}
-        imagem={imagem}
-        onSelecionarImagem={handleSelecionarImagem}
-        onSubmit={handleCadastrarProduto}
-        salvando={salvando}
-        listaSetores={listaSetores}
-        listaSubsetores={listaSubsetores}
-      />
+    <SubSectorFormModal
+      visible={modalSubsetorVisivel}
+      onClose={() => {
+        setModalSubsetorVisivel(false);
+        setFormSubsetor({ id: null, nome: '', setorPaiId: '' });
+      }}
+      form={formSubsetor}
+      setFormValue={(campo, valor) => setFormSubsetor({...formSubsetor, [campo]: valor})}
+      setores={listaSetores} 
+      onSubmit={handleSalvarSubsetor}
+      salvando={salvandoSubsetor}
+    />
 
-      <ProductDetailModal
-        item={itemSelecionado}
-        visible={Boolean(itemSelecionado)}
-        baseUrl={BASE_URL}
-        onClose={() => setItemSelecionado(null)}
-        onExcluir={handleExcluirProduto}
-        onMaryPatch={handleMaryPatch}
-        listaSetores={listaSetores}
-      />
+    <ProductFormModal
+      visible={modalProdutoVisivel}
+      onClose={() => {
+        setModalProdutoVisivel(false);
+        setFormProduto(initialProductForm);
+        setImagem(null);
+      }}
+      form={formProduto}
+      setFormValue={setProductFormValue}
+      imagem={imagem}
+      onSelecionarImagem={handleSelecionarImagem}
+      onSubmit={handleCadastrarProduto}
+      salvando={salvando}
+      listaSetores={listaSetores}
+      listaSubsetores={listaSubsetores}
+    />
 
-      <QuickMovementModal
-        visible={modalRapidoVisivel}
-        onClose={() => setModalRapidoVisivel(false)}
-        tipoRapido={tipoRapido}
-        itemSelecionado={itemRapidoSelecionado}
-        quantidadeRapida={quantidadeRapida}
-        onQuantidadeChange={setQuantidadeRapida}
-        onConfirmar={confirmarMovimentacaoRapida}
-      />
+    <ProductDetailModal
+      item={itemSelecionado}
+      visible={Boolean(itemSelecionado)}
+      baseUrl={BASE_URL}
+      onClose={() => setItemSelecionado(null)}
+      onExcluir={handleExcluirProduto}
+      onMaryPatch={handleMaryPatch}
+      listaSetores={listaSetores}
+    />
 
-    </SafeAreaView>
-  );
-}
+    <QuickMovementModal
+      visible={modalRapidoVisivel}
+      onClose={() => setModalRapidoVisivel(false)}
+      tipoRapido={tipoRapido}
+      itemSelecionado={itemRapidoSelecionado}
+      quantidadeRapida={quantidadeRapida}
+      onQuantidadeChange={setQuantidadeRapida}
+      onConfirmar={confirmarMovimentacaoRapida}
+    />
+
+  </SafeAreaView>
+)};

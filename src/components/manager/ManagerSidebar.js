@@ -16,6 +16,8 @@ export default function ManagerSidebar({
     { id: 'produtos', label: 'Inventário', desc: 'Gestão de estoque' },
     { id: 'setores', label: 'Setores', desc: 'Gestão de áreas' },
     { id: 'movimentacoes', label: 'Movimentações', desc: 'Histórico de auditoria' },
+    // 👥 ADICIONADO: Nova aba de funcionários integrada ao design
+    { id: 'funcionarios', label: 'Equipe', desc: 'Gestão de acessos' }, 
   ];
 
   return (
