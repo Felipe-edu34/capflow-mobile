@@ -26,8 +26,8 @@ import ProductFormModal from '../components/manager/ProductFormModal';
 import QuickMovementModal from '../components/manager/QuickMovementModal';
 import CriticalAlertsModal from '../components/manager/CriticalAlertsModal';
 
-const API_URL = 'http://127.0.0.1:8000/api';
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'http://localhost:8000';
+const API_URL = 'http://localhost:8000/api';
 
 const initialProductForm = {
   nome: '',
@@ -41,7 +41,7 @@ const initialProductForm = {
 const initialSectorForm = {
   id: null,
   nome: '',
-  responsavelId: '',
+  responsaveisIds: [],
 };
 
 const initialSubsetorForm = {
@@ -96,6 +96,17 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   const [modalAlertasVisivel, setModalAlertasVisivel] = useState(false);
   const [alertaVisualizado, setAlertaVisualizado] = useState(false);
   const [modalSetorVisivel, setModalSetorVisivel] = useState(false);
+  const [listaFuncionarios, setListaFuncionarios] = useState([]); 
+  const carregarFuncionariosCombo = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/funcionarios/`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+      setListaFuncionarios(response.data);
+    } catch (error) {
+      console.log('Erro ao buscar funcionários para o checklist:', error);
+    }
+  };
 
   const carregarItens = async () => {
     try {
@@ -149,6 +160,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarSetores();
       carregarMovimentacoes();
       carregarSubsetores();
+      carregarFuncionariosCombo(); // Carrega a lista de funcionários para o checklist
     }
   }, [token]);
 
@@ -321,8 +333,12 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
 
     setSalvando(true);
-    const payload = { nome: formSetor.nome };
-    if (formSetor.responsavelId) payload.responsavel = formSetor.responsavelId;
+    
+    // 🛠️ Payload atualizado para mandar a lista "responsaveis"
+    const payload = { 
+      nome: formSetor.nome,
+      responsaveis: formSetor.responsaveisIds || [] 
+    };
 
     try {
       if (formSetor.id) {
@@ -342,6 +358,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       carregarItens();
       carregarSetores();
     } catch (error) {
+      console.log("Erro ao salvar setor:", error.response?.data || error.message);
       alert('Erro ao salvar o setor.');
     } finally {
       setSalvando(false);
@@ -399,13 +416,13 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
-  const abrirModalEdicaoSubsetor = (sub) => {
-    setFormSubsetor({
-      id: sub.id,
-      nome: sub.nome,
-      setorPaiId: sub.setor_pai,
+  const abrirModalEdicaoSetor = (setor) => {
+    setFormSetor({
+      id: setor.id,
+      nome: setor.nome,
+      responsaveisIds: setor.responsaveis || [], // 👈 Puxa os IDs salvos no Django para o checklist iniciar marcado!
     });
-    setModalSubsetorVisivel(true);
+    setModalSetorVisivel(true);
   };
 
   const handleExcluirSetor = async (idSetor) => {
@@ -427,13 +444,14 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
-  const abrirModalEdicaoSetor = (setor) => {
-    setFormSetor({
-      id: setor.id,
-      nome: setor.nome,
-      responsavelId: setor.responsavel || '',
+  const abrirModalEdicaoSubsetor = (subsetor) => {
+    // Certifique-se de que os nomes dos seus states batam com os abaixo:
+    setFormSubsetor({
+      id: subsetor.id,
+      nome: subsetor.nome,
+      setorPaiId: subsetor.setor_pai || subsetor.setor_pai_id || '', 
     });
-    setModalSetorVisivel(true);
+    setModalSubsetorVisivel(true); // Ou o nome do seu estado de visibilidade do modal de subsetor
   };
 
   const handleExcluirProduto = async (idProduto) => {
@@ -683,6 +701,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       setFormValue={setSectorFormValue}
       onSubmit={handleSalvarSetor}
       salvando={salvando}
+      funcionarios={listaFuncionarios}
     />
 
     <SubSectorFormModal
