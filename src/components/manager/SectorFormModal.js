@@ -43,7 +43,7 @@ export default function SectorFormModal({
             </TouchableOpacity>
           </View>
 
-          <View style={modernStyles.modalBody}>
+          <ScrollView contentContainerStyle={modernStyles.modalBody} showsVerticalScrollIndicator={false}>
             <Text style={{ fontSize: 14, color: '#64748B', marginBottom: 20 }}>
               Crie áreas operacionais e atribua responsáveis.
             </Text>
@@ -135,7 +135,7 @@ export default function SectorFormModal({
                 <Text style={modernStyles.primaryButtonText}>{form.id ? 'Salvar Alterações' : 'Criar Setor'}</Text>
               )}
             </TouchableOpacity>
-          </View>
+          </ScrollView>
 
         </View>
       </View>

@@ -55,8 +55,8 @@ export default function DashboardFilters({
 
       {/* Alerta de Ruptura na Tela Principal */}
       {listaItensCriticos.length > 0 && (
-        <View style={{ backgroundColor: '#FEF2F2', borderColor: '#FEE2E2', borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1, marginRight: 16 }}>
+        <View style={{ backgroundColor: '#FEF2F2', borderColor: '#FEE2E2', borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <View style={{ flex: 1, minWidth: 180, marginRight: 8 }}>
             <Text style={{ color: '#991B1B', fontWeight: '700', fontSize: 14, marginBottom: 2 }}>
               Ruptura Iminente de Estoque
             </Text>

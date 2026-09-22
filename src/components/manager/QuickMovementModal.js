@@ -26,8 +26,8 @@ export default function QuickMovementModal({
 
     // Se for SAÍDA, verifica se tem estoque suficiente
     if (!isEntrada) {
-      // Pega o estoque atual (garante que seja número, se vier vazio vira 0)
-      const estoqueAtual = Number(itemSelecionado.quantidade || 0); 
+      // Pega o estoque atual (garante que seja número, testando quantidade_atual ou quantidade)
+      const estoqueAtual = Number(itemSelecionado.quantidade_atual ?? itemSelecionado.quantidade ?? 0); 
       
       if (qtdDesejada > estoqueAtual) {
         alert(`❌ Operação bloqueada!\n\nVocê tentou retirar ${qtdDesejada}, mas o estoque atual é de apenas ${estoqueAtual} UN.`);
@@ -45,7 +45,7 @@ export default function QuickMovementModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'center', alignItems: 'center' }}
       >
-        <View style={{ backgroundColor: '#FFF', width: '85%', borderRadius: 16, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 }}>
+        <View style={{ backgroundColor: '#FFF', width: '85%', maxWidth: 420, borderRadius: 16, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 }}>
           
           <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: isEntrada ? '#E0F2FE' : '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
@@ -62,7 +62,7 @@ export default function QuickMovementModal({
             {/* Mostra o estoque atual para o usuário saber quanto pode tirar */}
             {!isEntrada && (
               <Text style={{ fontSize: 12, color: '#EF4444', marginTop: 4, fontWeight: 'bold' }}>
-                Estoque atual: {itemSelecionado.quantidade || 0}
+                Estoque atual: {itemSelecionado.quantidade_atual ?? itemSelecionado.quantidade ?? 0}
               </Text>
             )}
           </View>

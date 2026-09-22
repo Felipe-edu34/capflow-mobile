@@ -15,7 +15,7 @@ export default function ManagerHeader({ listaItensCriticos, onAbrirAlertas }) {
         </View>
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         {listaItensCriticos.length > 0 && (
           <TouchableOpacity 
             onPress={onAbrirAlertas}

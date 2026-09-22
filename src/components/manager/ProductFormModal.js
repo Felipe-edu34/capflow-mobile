@@ -255,8 +255,8 @@ export default function ProductFormModal({
 
             <Text style={modernStyles.formLabel}>Imagem do Produto (Opcional)</Text>
             <TouchableOpacity style={modernStyles.imageUploadBox} onPress={handleEscolhaImagem} disabled={salvando} activeOpacity={0.6}>
-              <Text style={modernStyles.imageUploadText}>
-                {imagem ? '✓ Imagem Selecionada' : 'Clique para selecionar imagem'}
+              <Text style={[modernStyles.imageUploadText, imagem && { color: '#059669', fontWeight: '700' }]}>
+                {imagem ? `✓ Imagem Selecionada (${imagem.name || imagem.fileName || 'Foto'})` : 'Clique para selecionar imagem'}
               </Text>
             </TouchableOpacity>
 

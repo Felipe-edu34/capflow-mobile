@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
+import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View, Image, Platform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
-export default function ProductDetailModal({ item, visible, onClose, onExcluir, onAtualizar, listaSetores = [], baseUrl }) {
+export default function ProductDetailModal({ item, visible, onClose, onExcluir, onAtualizar, onMaryPatch, listaSetores = [], baseUrl }) {
   const [isEditing, setIsEditing] = useState(false);
   const [formEdit, setFormEdit] = useState({});
   const [novaImagem, setNovaImagem] = useState(null);
+  const [dropdownSetorAberto, setDropdownSetorAberto] = useState(false);
 
   // Sincroniza o formulário local sempre que um novo item é selecionado
   useEffect(() => {
@@ -18,13 +20,35 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
       });
       setIsEditing(false);
       setNovaImagem(null);
+      setDropdownSetorAberto(false);
     }
   }, [item]);
 
   if (!visible || !item) return null;
 
   const handleSalvar = () => {
-    onAtualizar(item.id, formEdit, novaImagem);
+    if (onMaryPatch) {
+      onMaryPatch(item.id, formEdit, novaImagem);
+    } else if (onAtualizar) {
+      onAtualizar(item.id, formEdit, novaImagem);
+    }
+  };
+
+  const handleEscolherNovaImagem = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setNovaImagem(result.assets[0]);
+      }
+    } catch (error) {
+      console.log('Erro ao selecionar imagem:', error);
+      alert('Não foi possível abrir a galeria.');
+    }
   };
 
   // Componente de rótulo para padronização de formulários corporativos
@@ -39,11 +63,13 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
 
   const imageUri = item.imagem?.startsWith('http') ? item.imagem : `${baseUrl}${item.imagem}`;
 
+  const nomeSetorSelecionado = listaSetores.find(s => String(s.id) === String(formEdit.setor))?.nome || 'Selecione um setor...';
+
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
         
-        <View style={{ width: '100%', maxWidth: 500, backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 }}>
+        <View style={{ width: '90%', maxWidth: 500, maxHeight: '90%', backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 }}>
           
           {/* CABEÇALHO DO MODAL */}
           <View style={{ backgroundColor: '#06111F', padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -55,7 +81,7 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={{ maxHeight: '80vh', padding: 20 }}>
+          <ScrollView style={{ maxHeight: 500, padding: 20 }}>
             {/* MODO DE EDIÇÃO */}
             {isEditing ? (
               <View>
@@ -78,40 +104,68 @@ export default function ProductDetailModal({ item, visible, onClose, onExcluir, 
                 </View>
 
                 <Label>Setor responsável</Label>
-                {/* Abstração segura para renderizar o elemento HTML select sem quebrar o Metro Bundler */}
-                <View style={{ 
-                  backgroundColor: '#F8FAFC', 
-                  borderWidth: 1, 
-                  borderColor: '#CBD5E1', 
-                  borderRadius: 8, 
-                  overflow: 'hidden',
-                  height: 40,
-                  justifyContent: 'center',
-                  marginBottom: 4
-                }}>
-                  <select
-                    style={{ 
-                      width: '100%', 
-                      height: '100%',
-                      backgroundColor: 'transparent',
-                      color: '#0F172A', 
-                      border: 'none',
-                      outline: 'none',
-                      paddingLeft: 12,
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit'
-                    }}
-                    value={formEdit.setor}
-                    onChange={(e) => setFormEdit({ ...formEdit, setor: e.target.value })}
-                  >
-                    <option value="">Selecione...</option>
-                    {listaSetores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
-                  </select>
-                </View>
+                {/* Seletor nativo e universal compatível com Mobile e Web */}
+                <TouchableOpacity
+                  style={[inputStyle, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+                  onPress={() => setDropdownSetorAberto(!dropdownSetorAberto)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ color: formEdit.setor ? '#0F172A' : '#94A3B8', fontSize: 14 }}>
+                    {nomeSetorSelecionado}
+                  </Text>
+                  <Text style={{ color: '#64748B', fontSize: 10 }}>{dropdownSetorAberto ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {dropdownSetorAberto && (
+                  <View style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, maxHeight: 150, marginBottom: 8, overflow: 'hidden' }}>
+                    <ScrollView nestedScrollEnabled={true}>
+                      {listaSetores.map((s) => {
+                        const isSelected = String(formEdit.setor) === String(s.id);
+                        return (
+                          <TouchableOpacity
+                            key={s.id}
+                            style={{
+                              paddingHorizontal: 12,
+                              paddingVertical: 10,
+                              borderBottomWidth: 1,
+                              borderBottomColor: '#F1F5F9',
+                              backgroundColor: isSelected ? '#E0F2FE' : 'transparent',
+                            }}
+                            onPress={() => {
+                              setFormEdit({ ...formEdit, setor: s.id });
+                              setDropdownSetorAberto(false);
+                            }}
+                          >
+                            <Text style={{ color: isSelected ? '#0284C7' : '#334155', fontWeight: isSelected ? '700' : '400', fontSize: 13 }}>
+                              {s.nome}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )}
 
                 <Label>Atualizar Imagem (Opcional)</Label>
-                <input type="file" accept="image/*" onChange={(e) => setNovaImagem(e.target.files[0])} style={{ marginTop: 5 }} />
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#F8FAFC',
+                    borderWidth: 1,
+                    borderStyle: 'dashed',
+                    borderColor: '#CBD5E1',
+                    borderRadius: 8,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                    marginTop: 4,
+                    marginBottom: 8
+                  }}
+                  onPress={handleEscolherNovaImagem}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ color: novaImagem ? '#10B981' : '#64748B', fontSize: 13, fontWeight: '600' }}>
+                    {novaImagem ? '✓ Nova Imagem Selecionada' : 'Clique para selecionar nova imagem'}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
             ) : (

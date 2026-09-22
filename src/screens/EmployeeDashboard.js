@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function EmployeeDashboard({ perfil, handleLogout }) {
   return (
@@ -9,9 +10,11 @@ export default function EmployeeDashboard({ perfil, handleLogout }) {
           <View style={styles.brandMark}>
             <Text style={styles.brandMarkText}>CF</Text>
           </View>
-          <View>
+          <View style={{ flexShrink: 1 }}>
             <Text style={styles.headerTitle}>CapFlow Ops</Text>
-            <Text style={styles.headerSubtitle}>{perfil.empresa} | Operador: {perfil.username}</Text>
+            <Text style={styles.headerSubtitle} numberOfLines={1}>
+              {perfil.empresa} | Operador: {perfil.username}
+            </Text>
           </View>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -19,7 +22,7 @@ export default function EmployeeDashboard({ perfil, handleLogout }) {
         </TouchableOpacity>
       </View>
       
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.statusPill}>
             <View style={styles.statusDot} />
@@ -60,7 +63,7 @@ export default function EmployeeDashboard({ perfil, handleLogout }) {
             <Text style={styles.taskText}>Registrar movimentações assim que a contagem física for validada.</Text>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    minWidth: 180,
+    minWidth: 135,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,

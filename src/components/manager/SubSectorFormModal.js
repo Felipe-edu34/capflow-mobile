@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Modal, ScrollView } from 'react-native';
 import modernStyles from './modernStyles';
 
 export default function SubSectorFormModal({
@@ -28,7 +28,7 @@ export default function SubSectorFormModal({
             </TouchableOpacity>
           </View>
 
-          <View style={modernStyles.modalBody}>
+          <ScrollView contentContainerStyle={modernStyles.modalBody} showsVerticalScrollIndicator={false}>
             <Text style={{ fontSize: 14, color: '#64748B', marginBottom: 20 }}>
               Crie subdivisões dentro dos seus setores principais.
             </Text>
@@ -95,7 +95,7 @@ export default function SubSectorFormModal({
                 <Text style={modernStyles.primaryButtonText}>Salvar Sub-setor</Text>
               )}
             </TouchableOpacity>
-          </View>
+          </ScrollView>
 
         </View>
       </View>

@@ -1,30 +1,33 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, Text, TouchableOpacity, View, Platform, Alert, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
+import * as ImagePicker from 'expo-image-picker';
 
 // --- ESTILOS ---
 import modernStyles from '../components/manager/modernStyles';
 
-// --- COMPONENTES DE ESTRUTURA (Visão Geral) ---
+// --- COMPONENTES DE ESTRUTURA ---
 import ManagerHeader from '../components/manager/ManagerHeader';
 import ManagerSidebar from '../components/manager/ManagerSidebar';
-import DashboardFilters from '../components/manager/DashboardFilters';
-import MetricCard from '../components/manager/MetricCard';
-import ManagerCharts from '../components/manager/ManagerCharts';
-import FuncionariosScreen from '../screens/FuncionariosScreen'; 
 
-// --- COMPONENTES DE LISTAGEM ---
+// --- COMPONENTES DE ABAS ---
+import DashboardOverview from '../components/manager/dashboard/DashboardOverview';
 import InventorySection from '../components/manager/InventorySection';
 import SectorList from '../components/manager/SectorList'; 
 import MovementHistory from '../components/manager/MovementHistory';
+import FuncionariosScreen from '../screens/FuncionariosScreen'; 
 
-// --- COMPONENTES DE MODAL (Formulários e Detalhes) ---
+// --- COMPONENTES DE MODAL ---
 import ProductDetailModal from '../components/manager/ProductDetailModal';
 import SectorFormModal from '../components/manager/SectorFormModal';
 import SubSectorFormModal from '../components/manager/SubSectorFormModal';
 import ProductFormModal from '../components/manager/ProductFormModal';
 import QuickMovementModal from '../components/manager/QuickMovementModal';
 import CriticalAlertsModal from '../components/manager/CriticalAlertsModal';
+
+// --- CUSTOM HOOK DE DADOS ---
+import useManagerData, { getSetorNome } from '../hooks/useManagerData';
 
 const BASE_URL = 'http://localhost:8000';
 const API_URL = 'http://localhost:8000/api';
@@ -50,193 +53,68 @@ const initialSubsetorForm = {
   setorPaiId: '',
 };
 
-function getSetorKey(item) {
-  return String(item.setor || item.setor_id || item.setor_nome || 'sem-setor');
-}
-
-// CORREÇÃO: Função agora retorna APENAS o Setor Principal
-function getSetorNome(item, listaSubsetores = []) {
-  let nomePai = item.setor_nome;
-  if (!nomePai && (item.setor || item.setor_id)) {
-    nomePai = `Setor ${item.setor || item.setor_id}`;
-  }
-  if (!nomePai) nomePai = 'Sem setor definido';
-
-  // Ignoramos a lógica antiga de colocar a setinha (➔) 
-  // Retornamos direto o nome do Setor Pai!
-  return nomePai;
-}
-
 export default function ManagerDashboard({ perfil, token, handleLogout }) {
-  const [abaAtiva, setAbaAtiva] = useState('dashboard');
-  const [itens, setItens] = useState([]);
-  const [sidebarAberta, setSidebarAberta] = useState(true);
-  const [listaSetores, setListaSetores] = useState([]);
-  const [listaSubsetores, setListaSubsetores] = useState([]);
-  const [modalSubsetorVisivel, setModalSubsetorVisivel] = useState(false);
-  const [salvandoSubsetor, setSalvandoSubsetor] = useState(false);
-  const [formSubsetor, setFormSubsetor] = useState(initialSubsetorForm);
-  const [loading, setLoading] = useState(true);
-  const [salvando, setSalvando] = useState(false);
-  const [itemSelecionado, setItemSelecionado] = useState(null);
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
+  const [abaAtiva, setAbaAtiva] = useState('dashboard');
+  const [sidebarAberta, setSidebarAberta] = useState(!isMobile);
+
+  const handleSelectTab = (tab) => {
+    setAbaAtiva(tab);
+    if (isMobile) {
+      setSidebarAberta(false);
+    }
+  };
+
+  // Hook centralizado com dados, carregamentos e métricas
+  const {
+    itens,
+    listaSetores,
+    listaSubsetores,
+    movimentacoes,
+    listaFuncionarios,
+    loading,
+    setorSelecionado,
+    setSetorSelecionado,
+    busca,
+    setBusca,
+    ordenacao,
+    setOrdenacao,
+    setores,
+    indicadores,
+    gruposPorSetor,
+    listaItensCriticos,
+    itensFiltrados,
+    carregarItens,
+    carregarSetores,
+    carregarSubsetores,
+    carregarMovimentacoes,
+  } = useManagerData(token);
+
+  // Estados dos formulários de modal
   const [formProduto, setFormProduto] = useState(initialProductForm);
   const [formSetor, setFormSetor] = useState(initialSectorForm);
+  const [formSubsetor, setFormSubsetor] = useState(initialSubsetorForm);
   const [imagem, setImagem] = useState(null);
-  const [setorSelecionado, setSetorSelecionado] = useState('todos');
-  const [busca, setBusca] = useState('');
-  const [movimentacoes, setMovimentacoes] = useState([]);
+
+  // Estados de controle dos modais
+  const [modalProdutoVisivel, setModalProdutoVisivel] = useState(false);
+  const [modalSetorVisivel, setModalSetorVisivel] = useState(false);
+  const [modalSubsetorVisivel, setModalSubsetorVisivel] = useState(false);
+  const [modalAlertasVisivel, setModalAlertasVisivel] = useState(false);
+  const [alertaVisualizado, setAlertaVisualizado] = useState(false);
   const [modalRapidoVisivel, setModalRapidoVisivel] = useState(false);
+  const [itemSelecionado, setItemSelecionado] = useState(null);
   const [itemRapidoSelecionado, setItemRapidoSelecionado] = useState(null);
   const [tipoRapido, setTipoRapido] = useState('ENTRADA');
   const [quantidadeRapida, setQuantidadeRapida] = useState('');
-  const [ordenacao, setOrdenacao] = useState('alfabetica');
-  const [modalProdutoVisivel, setModalProdutoVisivel] = useState(false);
-  
-  const [modalAlertasVisivel, setModalAlertasVisivel] = useState(false);
-  const [alertaVisualizado, setAlertaVisualizado] = useState(false);
-  const [modalSetorVisivel, setModalSetorVisivel] = useState(false);
-  const [listaFuncionarios, setListaFuncionarios] = useState([]); 
-  const carregarFuncionariosCombo = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/funcionarios/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      setListaFuncionarios(response.data);
-    } catch (error) {
-      console.log('Erro ao buscar funcionários para o checklist:', error);
-    }
-  };
 
-  const carregarItens = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/itens/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      setItens(response.data);
-    } catch (error) {
-      console.log('Erro ao buscar itens:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Estados de loading de salvamento
+  const [salvando, setSalvando] = useState(false);
+  const [salvandoSubsetor, setSalvandoSubsetor] = useState(false);
 
-  const carregarSetores = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/setores/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      setListaSetores(response.data);
-    } catch (error) {
-      console.log('Erro ao buscar setores:', error);
-    }
-  };
-
-  const carregarSubsetores = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/subsetores/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      setListaSubsetores(response.data);
-    } catch (error) {
-      console.log("Erro ao carregar sub-setores:", error);
-    }
-  };
-
-  const carregarMovimentacoes = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/movimentacoes/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      setMovimentacoes(response.data);
-    } catch (error) {
-      console.log('Erro ao buscar movimentações:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (token) {
-      carregarItens();
-      carregarSetores();
-      carregarMovimentacoes();
-      carregarSubsetores();
-      carregarFuncionariosCombo(); // Carrega a lista de funcionários para o checklist
-    }
-  }, [token]);
-
-  const setores = useMemo(() => {
-    const mapa = new Map();
-    itens.forEach(item => {
-      const key = getSetorKey(item);
-      const nome = getSetorNome(item, listaSubsetores);
-      if (!mapa.has(key)) mapa.set(key, { key, nome });
-    });
-    return Array.from(mapa.values()).sort((a, b) => a.nome.localeCompare(b.nome));
-  }, [itens, listaSubsetores]);
-
-  const { indicadores, gruposPorSetor, listaItensCriticos, itensFiltrados } = useMemo(() => {
-    const mapaSetores = new Map();
-    let volume = 0;
-    let itensCriticos = 0;
-    const criticosArr = [];
-
-    const filtrados = itens.filter((item) => {
-      if (busca.trim() && !item.nome.toLowerCase().includes(busca.toLowerCase())) return false;
-      if (setorSelecionado !== 'todos' && getSetorKey(item) !== String(setorSelecionado)) return false;
-      return true;
-    });
-
-    filtrados.forEach((item) => {
-      const key = getSetorKey(item);
-      const nome = getSetorNome(item, listaSubsetores);
-      const estoqueBaixo = Number(item.quantidade_atual) <= Number(item.estoque_minimo);
-
-      volume += Number(item.quantidade_atual || 0);
-      
-      if (estoqueBaixo) {
-        itensCriticos += 1;
-        criticosArr.push(item);
-      }
-
-      if (!mapaSetores.has(key)) {
-        mapaSetores.set(key, { key, nome, itens: [], criticos: 0 });
-      }
-
-      const grupo = mapaSetores.get(key);
-      grupo.itens.push(item);
-      if (estoqueBaixo) grupo.criticos += 1;
-    });
-
-    const grupos = Array.from(mapaSetores.values()).sort((a, b) => a.nome.localeCompare(b.nome));
-
-    grupos.forEach(grupo => {
-      grupo.itens.sort((a, b) => {
-        if (ordenacao === 'alfabetica') return a.nome.localeCompare(b.nome);
-        if (ordenacao === 'maior_estoque') return Number(b.quantidade_atual) - Number(a.quantidade_atual);
-        if (ordenacao === 'menor_estoque') return Number(a.quantidade_atual) - Number(b.quantidade_atual);
-        if (ordenacao === 'criticos') {
-          const aCritico = Number(a.quantidade_atual) <= Number(a.estoque_minimo) ? 1 : 0;
-          const bCritico = Number(b.quantidade_atual) <= Number(b.estoque_minimo) ? 1 : 0;
-          if (bCritico === aCritico) return a.nome.localeCompare(b.nome);
-          return bCritico - aCritico;
-        }
-        return 0;
-      });
-    });
-
-    return {
-      indicadores: {
-        totalItens: filtrados.length,
-        itensCriticos,
-        setores: mapaSetores.size,
-        volume,
-      },
-      gruposPorSetor: grupos,
-      listaItensCriticos: criticosArr,
-      itensFiltrados: filtrados,
-    };
-  }, [itens, busca, ordenacao, setorSelecionado, listaSubsetores]);
-
+  // Exibe alerta de ruptura na inicialização se houver itens críticos
   useEffect(() => {
     if (!loading && listaItensCriticos.length > 0 && !alertaVisualizado) {
       setModalAlertasVisivel(true);
@@ -252,9 +130,27 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     setFormSetor((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSelecionarImagem = (event) => {
-    const arquivo = event.target.files?.[0];
-    if (arquivo) setImagem(arquivo);
+  const handleSelecionarImagem = async (event) => {
+    const arquivoWeb = event?.target?.files?.[0];
+    if (arquivoWeb) {
+      setImagem(arquivoWeb);
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImagem(result.assets[0]);
+      }
+    } catch (error) {
+      console.log('Erro ao selecionar imagem:', error);
+      alert('Não foi possível abrir a galeria.');
+    }
   };
 
   const handleCadastrarProduto = async () => {
@@ -287,10 +183,23 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       formData.append('setor', setorPrincipalSelecionado.id);
     }
 
-    if (imagem) formData.append('imagem', imagem);
+    if (imagem) {
+      if (Platform.OS === 'web' && typeof File !== 'undefined' && imagem instanceof File) {
+        formData.append('imagem', imagem);
+      } else if (imagem.uri) {
+        const uriParts = imagem.uri.split('.');
+        const fileType = uriParts[uriParts.length - 1] || 'jpg';
+        formData.append('imagem', {
+          uri: imagem.uri,
+          name: imagem.fileName || `produto_${Date.now()}.${fileType}`,
+          type: imagem.mimeType || `image/${fileType === 'jpg' ? 'jpeg' : fileType}`,
+        });
+      } else {
+        formData.append('imagem', imagem);
+      }
+    }
 
     try {
-      // 1. Salva o produto
       const response = await axios.post(`${API_URL}/itens/`, formData, {
         headers: {
           Authorization: `Token ${token}`,
@@ -298,15 +207,14 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         },
       });
 
-      const novoProduto = response.data; // Pega os dados do produto recém-criado
+      const novoProduto = response.data;
 
-      // 2. Cria a movimentação de ENTRADA automaticamente (se a qtd for maior que 0)
       if (Number(formProduto.quantidade) > 0) {
         await axios.post(`${API_URL}/movimentacoes/`, {
-          item: novoProduto.id, // Usa o ID do produto que acabou de ser criado
+          item: novoProduto.id,
           tipo: 'ENTRADA',
           quantidade: Number(formProduto.quantidade),
-          observacao: 'NOVO PRODUTO CADASTRADO', // Alterado aqui!
+          observacao: 'NOVO PRODUTO CADASTRADO',
         }, {
           headers: { Authorization: `Token ${token}` },
         });
@@ -317,7 +225,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       setImagem(null);
       setModalProdutoVisivel(false);
       carregarItens();
-      carregarMovimentacoes(); // Isso vai atualizar a tela de histórico na mesma hora!
+      carregarMovimentacoes();
     } catch (error) {
       console.log('Erro detalhado:', error.response?.data || error.message);
       alert('Erro ao salvar o produto no estoque.');
@@ -333,8 +241,6 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
 
     setSalvando(true);
-    
-    // 🛠️ Payload atualizado para mandar a lista "responsaveis"
     const payload = { 
       nome: formSetor.nome,
       responsaveis: formSetor.responsaveisIds || [] 
@@ -400,75 +306,86 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     }
   };
 
-  const handleExcluirSubsetor = async (idSubsetor) => {
-    const confirmar = window?.confirm ? window.confirm('Deseja excluir este sub-setor?') : true;
-    if (!confirmar) return;
-
-    try {
-      await axios.delete(`${API_URL}/subsetores/${idSubsetor}/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      alert('Sub-setor excluído!');
-      carregarSubsetores();
-      carregarItens();
-    } catch (error) {
-      alert('Erro ao excluir. Verifique se há produtos vinculados a este sub-setor.');
+  const confirmarAcao = (mensagem, onConfirmar) => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.confirm) {
+      if (window.confirm(mensagem)) {
+        onConfirmar();
+      }
+    } else {
+      Alert.alert(
+        'Confirmar Exclusão',
+        mensagem,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Excluir', style: 'destructive', onPress: onConfirmar },
+        ],
+        { cancelable: true }
+      );
     }
+  };
+
+  const handleExcluirSubsetor = (idSubsetor) => {
+    confirmarAcao('Deseja excluir este sub-setor?', async () => {
+      try {
+        await axios.delete(`${API_URL}/subsetores/${idSubsetor}/`, {
+          headers: { Authorization: `Token ${token}` },
+        });
+        alert('Sub-setor excluído!');
+        carregarSubsetores();
+        carregarItens();
+      } catch (error) {
+        alert('Erro ao excluir. Verifique se há produtos vinculados a este sub-setor.');
+      }
+    });
   };
 
   const abrirModalEdicaoSetor = (setor) => {
     setFormSetor({
       id: setor.id,
       nome: setor.nome,
-      responsaveisIds: setor.responsaveis || [], // 👈 Puxa os IDs salvos no Django para o checklist iniciar marcado!
+      responsaveisIds: setor.responsaveis || [],
     });
     setModalSetorVisivel(true);
   };
 
-  const handleExcluirSetor = async (idSetor) => {
-    const confirmar = window?.confirm 
-      ? window.confirm('Deseja realmente excluir este setor? Atenção: Isso pode afetar os produtos vinculados a ele.') 
-      : true;
-      
-    if (!confirmar) return;
-
-    try {
-      await axios.delete(`${API_URL}/setores/${idSetor}/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      alert('Setor excluído com sucesso!');
-      carregarItens();
-      carregarSetores();
-    } catch (error) {
-      alert('Erro ao excluir o setor.');
-    }
+  const handleExcluirSetor = (idSetor) => {
+    confirmarAcao('Deseja realmente excluir este setor? Atenção: Isso pode afetar os produtos vinculados a ele.', async () => {
+      try {
+        await axios.delete(`${API_URL}/setores/${idSetor}/`, {
+          headers: { Authorization: `Token ${token}` },
+        });
+        alert('Setor excluído com sucesso!');
+        carregarItens();
+        carregarSetores();
+      } catch (error) {
+        alert('Erro ao excluir o setor.');
+      }
+    });
   };
 
   const abrirModalEdicaoSubsetor = (subsetor) => {
-    // Certifique-se de que os nomes dos seus states batam com os abaixo:
     setFormSubsetor({
       id: subsetor.id,
       nome: subsetor.nome,
       setorPaiId: subsetor.setor_pai || subsetor.setor_pai_id || '', 
     });
-    setModalSubsetorVisivel(true); // Ou o nome do seu estado de visibilidade do modal de subsetor
+    setModalSubsetorVisivel(true);
   };
 
-  const handleExcluirProduto = async (idProduto) => {
-    const confirmar = window?.confirm ? window.confirm('Deseja excluir permanentemente?') : true;
-    if (!confirmar) return;
-
-    try {
-      await axios.delete(`${API_URL}/itens/${idProduto}/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      alert('Produto excluído com sucesso!');
-      setItemSelecionado(null);
-      carregarItens();
-      carregarMovimentacoes();
-    } catch (error) {
-      alert('Erro ao excluir the produto.');
-    }
+  const handleExcluirProduto = (idProduto) => {
+    confirmarAcao('Deseja excluir permanentemente este produto?', async () => {
+      try {
+        await axios.delete(`${API_URL}/itens/${idProduto}/`, {
+          headers: { Authorization: `Token ${token}` },
+        });
+        alert('Produto excluído com sucesso!');
+        setItemSelecionado(null);
+        carregarItens();
+        carregarMovimentacoes();
+      } catch (error) {
+        alert('Erro ao excluir o produto.');
+      }
+    });
   };
 
   const handleMaryPatch = async (idProduto, dadosAtualizados, novaImagem) => {
@@ -480,7 +397,21 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       formData.append('estoque_minimo', dadosAtualizados.estoque_minimo);
       formData.append('setor', dadosAtualizados.setor);
 
-      if (novaImagem) formData.append('imagem', novaImagem);
+      if (novaImagem) {
+        if (Platform.OS === 'web' && typeof File !== 'undefined' && novaImagem instanceof File) {
+          formData.append('imagem', novaImagem);
+        } else if (novaImagem.uri) {
+          const uriParts = novaImagem.uri.split('.');
+          const fileType = uriParts[uriParts.length - 1] || 'jpg';
+          formData.append('imagem', {
+            uri: novaImagem.uri,
+            name: novaImagem.fileName || `produto_${Date.now()}.${fileType}`,
+            type: novaImagem.mimeType || `image/${fileType === 'jpg' ? 'jpeg' : fileType}`,
+          });
+        } else {
+          formData.append('imagem', novaImagem);
+        }
+      }
 
       await axios.patch(`${API_URL}/itens/${idProduto}/`, formData, {
         headers: { 
@@ -514,29 +445,11 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
       return;
     }
 
-    let novaQuantidadeAtual = Number(itemRapidoSelecionado.quantidade_atual);
-    if (tipoRapido === 'ENTRADA') {
-      novaQuantidadeAtual += quantidadeNum;
-    } else {
-      if (novaQuantidadeAtual - quantidadeNum < 0) {
-        alert('Operação negada: Quantidade insuficiente em estoque.');
-        return;
-      }
-      novaQuantidadeAtual -= quantidadeNum;
-    }
-
     try {
       await axios.post(`${API_URL}/movimentacoes/`, {
         item: itemRapidoSelecionado.id,
         tipo: tipoRapido,
         quantidade: quantidadeNum,
-        observacao: `Movimentação rápida via painel geral`,
-      }, {
-        headers: { Authorization: `Token ${token}` },
-      });
-
-      await axios.patch(`${API_URL}/itens/${itemRapidoSelecionado.id}/`, {
-        quantidade_atual: novaQuantidadeAtual
       }, {
         headers: { Authorization: `Token ${token}` },
       });
@@ -550,209 +463,207 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   return (
-  <SafeAreaView style={modernStyles.container}>
-    
-    {/* 1. COMPONENTE HEADER */}
-    <ManagerHeader 
-      listaItensCriticos={listaItensCriticos} 
-      onAbrirAlertas={() => setModalAlertasVisivel(true)} 
-    />
-
-    <View style={{ flex: 1, flexDirection: 'row' }}>
-      
-      {/* 2. COMPONENTE SIDEBAR */}
-      <ManagerSidebar 
-        sidebarAberta={sidebarAberta}
-        abaAtiva={abaAtiva}
-        setAbaAtiva={setAbaAtiva}
-        perfil={perfil}
-        handleLogout={handleLogout}
+    <SafeAreaView style={modernStyles.container}>
+      {/* 1. HEADER */}
+      <ManagerHeader 
+        listaItensCriticos={listaItensCriticos} 
+        onAbrirAlertas={() => setModalAlertasVisivel(true)} 
       />
 
-      {/* ÁREA CENTRAL */}
-      <View style={{ flex: 1, flexDirection: 'column' }}>
-        
-        {/* Barra de Título */}
-        <View style={modernStyles.topBar}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <TouchableOpacity onPress={() => setSidebarAberta(!sidebarAberta)} style={modernStyles.toggleButton}>
-              <Text style={modernStyles.toggleButtonText}>{sidebarAberta ? '✕' : '☰'}</Text>
-            </TouchableOpacity>
-            <Text style={modernStyles.pageHeading}>
-              Painel Geral / {
-                abaAtiva === 'dashboard' ? 'Visão Geral' : 
-                abaAtiva === 'produtos' ? 'Inventário' :
-                abaAtiva === 'setores' ? 'Setores' :
-                abaAtiva === 'movimentacoes' ? 'Movimentações' :
-                abaAtiva === 'funcionarios' ? 'Equipe' : abaAtiva
-              }
-            </Text>
-          </View>
-          <View style={modernStyles.badgeStatus}>
-            <Text style={modernStyles.badgeStatusText}>Gestor Ativo</Text>
-          </View>
-        </View>
+      {/* Backdrop de Fundo para Mobile quando Sidebar está aberta */}
+      {isMobile && sidebarAberta && (
+        <TouchableOpacity 
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            zIndex: 90,
+          }}
+          activeOpacity={1}
+          onPress={() => setSidebarAberta(false)}
+        />
+      )}
 
-        <ScrollView contentContainerStyle={modernStyles.scrollContent}>
-          
-          {/* 3. COMPONENTE DE FILTROS (Só aparece no Dashboard) */}
-          {abaAtiva === 'dashboard' && (
-            <DashboardFilters 
-              setores={setores}
-              setorSelecionado={setorSelecionado}
-              setSetorSelecionado={setSetorSelecionado}
-              listaItensCriticos={listaItensCriticos}
-              onAbrirAlertas={() => setModalAlertasVisivel(true)}
-            />
-          )}
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        {/* 2. SIDEBAR */}
+        <ManagerSidebar 
+          sidebarAberta={sidebarAberta}
+          abaAtiva={abaAtiva}
+          setAbaAtiva={handleSelectTab}
+          perfil={perfil}
+          handleLogout={handleLogout}
+          isMobile={isMobile}
+          onCloseMobile={() => setSidebarAberta(false)}
+        />
 
-          {/* GRIDS DE MÉTRICAS (Só aparece no Dashboard) */}
-          {abaAtiva === 'dashboard' && (
-            <View style={[modernStyles.metricsGrid, { marginBottom: 24 }]}>
-              <MetricCard label="Produtos" value={indicadores.totalItens} hint="itens encontrados" />
-              <MetricCard
-                label="Críticos"
-                value={indicadores.itensCriticos}
-                hint="abaixo do mínimo"
-                danger={indicadores.itensCriticos > 0}
-              />
-              <MetricCard label="Setores" value={indicadores.setores} hint="areas envolvidas" />
-              <MetricCard label="Volume" value={indicadores.volume} hint="unidades registradas" />
+        {/* ÁREA CENTRAL */}
+        <View style={{ flex: 1, flexDirection: 'column' }}>
+          {/* Barra Superior */}
+          <View style={modernStyles.topBar}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <TouchableOpacity onPress={() => setSidebarAberta(!sidebarAberta)} style={modernStyles.toggleButton}>
+                <Text style={modernStyles.toggleButtonText}>{sidebarAberta ? '✕' : '☰'}</Text>
+              </TouchableOpacity>
+              <Text style={modernStyles.pageHeading}>
+                Painel Geral / {
+                  abaAtiva === 'dashboard' ? 'Visão Geral' : 
+                  abaAtiva === 'produtos' ? 'Inventário' :
+                  abaAtiva === 'setores' ? 'Setores' :
+                  abaAtiva === 'movimentacoes' ? 'Movimentações' :
+                  abaAtiva === 'funcionarios' ? 'Equipe' : abaAtiva
+                }
+              </Text>
             </View>
-          )}
-
-          {/* RENDERIZAÇÃO CONDICIONAL DAS ABAS */}
-          <View style={{ width: '100%', marginTop: 8 }}>
-            
-            {abaAtiva === 'dashboard' && (
-              <ManagerCharts gruposPorSetor={gruposPorSetor} itens={itensFiltrados} />
-            )}
-
-            {abaAtiva === 'produtos' && (
-              <InventorySection
-                grupos={gruposPorSetor}
-                setores={setores}
-                setorSelecionado={setorSelecionado}
-                onSelecionarSetor={setSetorSelecionado}
-                busca={busca}
-                onBuscaChange={setBusca}
-                loading={loading}
-                totalItens={indicadores.totalItens}
-                baseUrl={BASE_URL}
-                onOpenItem={setItemSelecionado}
-                ordenacao={ordenacao}
-                onOrdenacaoChange={setOrdenacao}
-                onNovoProduto={() => setModalProdutoVisivel(true)}
-                onMovimentacaoRapida={handleMovimentacaoRapida}
-              />
-            )}
-
-            {abaAtiva === 'setores' && (
-              <SectorList 
-                setores={listaSetores} 
-                subsetores={listaSubsetores} 
-                itens={itens} 
-                onNovoSetor={() => {
-                  setFormSetor(initialSectorForm);
-                  setModalSetorVisivel(true);
-                }}
-                onEditarSetor={abrirModalEdicaoSetor}
-                onExcluirSetor={handleExcluirSetor}
-                onNovoSubsetor={() => {
-                  setFormSubsetor({ id: null, nome: '', setorPaiId: '' }); 
-                  setModalSubsetorVisivel(true);
-                }}
-                onEditarSubsetor={abrirModalEdicaoSubsetor}
-                onExcluirSubsetor={handleExcluirSubsetor}
-              />
-            )}
-
-            {abaAtiva === 'movimentacoes' && (
-              <MovementHistory movimentacoes={movimentacoes} itens={itens} />
-            )}
-
-            {/* 👥 CORREÇÃO: Injetado o FuncionariosScreen mapeado ao id 'funcionarios' */}
-            {abaAtiva === 'funcionarios' && (
-              <FuncionariosScreen token={token} />
-            )}
-
+            <View style={modernStyles.badgeStatus}>
+              <Text style={modernStyles.badgeStatusText}>Gestor Ativo</Text>
+            </View>
           </View>
-        </ScrollView>
+
+          <ScrollView contentContainerStyle={modernStyles.scrollContent}>
+            <View style={{ width: '100%', marginTop: 8 }}>
+              {/* ABA 1: DASHBOARD (VISÃO GERAL MODULAR) */}
+              {abaAtiva === 'dashboard' && (
+                <DashboardOverview
+                  setores={setores}
+                  setorSelecionado={setorSelecionado}
+                  setSetorSelecionado={setSetorSelecionado}
+                  listaItensCriticos={listaItensCriticos}
+                  onAbrirAlertas={() => setModalAlertasVisivel(true)}
+                  indicadores={indicadores}
+                  gruposPorSetor={gruposPorSetor}
+                  itensFiltrados={itensFiltrados}
+                />
+              )}
+
+              {/* ABA 2: INVENTÁRIO */}
+              {abaAtiva === 'produtos' && (
+                <InventorySection
+                  grupos={gruposPorSetor}
+                  setores={setores}
+                  setorSelecionado={setorSelecionado}
+                  onSelecionarSetor={setSetorSelecionado}
+                  busca={busca}
+                  onBuscaChange={setBusca}
+                  loading={loading}
+                  totalItens={indicadores.totalItens}
+                  baseUrl={BASE_URL}
+                  onOpenItem={setItemSelecionado}
+                  ordenacao={ordenacao}
+                  onOrdenacaoChange={setOrdenacao}
+                  onNovoProduto={() => setModalProdutoVisivel(true)}
+                  onMovimentacaoRapida={handleMovimentacaoRapida}
+                />
+              )}
+
+              {/* ABA 3: SETORES */}
+              {abaAtiva === 'setores' && (
+                <SectorList 
+                  setores={listaSetores} 
+                  subsetores={listaSubsetores} 
+                  itens={itens} 
+                  onNovoSetor={() => {
+                    setFormSetor(initialSectorForm);
+                    setModalSetorVisivel(true);
+                  }}
+                  onEditarSetor={abrirModalEdicaoSetor}
+                  onExcluirSetor={handleExcluirSetor}
+                  onNovoSubsetor={() => {
+                    setFormSubsetor({ id: null, nome: '', setorPaiId: '' }); 
+                    setModalSubsetorVisivel(true);
+                  }}
+                  onEditarSubsetor={abrirModalEdicaoSubsetor}
+                  onExcluirSubsetor={handleExcluirSubsetor}
+                />
+              )}
+
+              {/* ABA 4: MOVIMENTAÇÕES */}
+              {abaAtiva === 'movimentacoes' && (
+                <MovementHistory movimentacoes={movimentacoes} itens={itens} />
+              )}
+
+              {/* ABA 5: EQUIPE / FUNCIONÁRIOS */}
+              {abaAtiva === 'funcionarios' && (
+                <FuncionariosScreen token={token} />
+              )}
+            </View>
+          </ScrollView>
+        </View>
       </View>
-    </View>
 
-    {/* COMPONENTES DE MODAIS AQUI */}
+      {/* MODAIS DO SISTEMA */}
+      <CriticalAlertsModal
+        visible={modalAlertasVisivel}
+        onClose={() => setModalAlertasVisivel(false)}
+        itensCriticos={listaItensCriticos}
+        getSetorNome={getSetorNome}
+        listaSubsetores={listaSubsetores}
+      />
+      
+      <SectorFormModal
+        visible={modalSetorVisivel}
+        onClose={() => {
+          setModalSetorVisivel(false);
+          setFormSetor(initialSectorForm);
+        }}
+        form={formSetor}
+        setFormValue={setSectorFormValue}
+        onSubmit={handleSalvarSetor}
+        salvando={salvando}
+        funcionarios={listaFuncionarios}
+      />
 
-    <CriticalAlertsModal
-      visible={modalAlertasVisivel}
-      onClose={() => setModalAlertasVisivel(false)}
-      itensCriticos={listaItensCriticos}
-      getSetorNome={getSetorNome}
-      listaSubsetores={listaSubsetores}
-    />
-    
-    <SectorFormModal
-      visible={modalSetorVisivel}
-      onClose={() => {
-        setModalSetorVisivel(false);
-        setFormSetor(initialSectorForm);
-      }}
-      form={formSetor}
-      setFormValue={setSectorFormValue}
-      onSubmit={handleSalvarSetor}
-      salvando={salvando}
-      funcionarios={listaFuncionarios}
-    />
+      <SubSectorFormModal
+        visible={modalSubsetorVisivel}
+        onClose={() => {
+          setModalSubsetorVisivel(false);
+          setFormSubsetor({ id: null, nome: '', setorPaiId: '' });
+        }}
+        form={formSubsetor}
+        setFormValue={(campo, valor) => setFormSubsetor({...formSubsetor, [campo]: valor})}
+        setores={listaSetores} 
+        onSubmit={handleSalvarSubsetor}
+        salvando={salvandoSubsetor}
+      />
 
-    <SubSectorFormModal
-      visible={modalSubsetorVisivel}
-      onClose={() => {
-        setModalSubsetorVisivel(false);
-        setFormSubsetor({ id: null, nome: '', setorPaiId: '' });
-      }}
-      form={formSubsetor}
-      setFormValue={(campo, valor) => setFormSubsetor({...formSubsetor, [campo]: valor})}
-      setores={listaSetores} 
-      onSubmit={handleSalvarSubsetor}
-      salvando={salvandoSubsetor}
-    />
+      <ProductFormModal
+        visible={modalProdutoVisivel}
+        onClose={() => {
+          setModalProdutoVisivel(false);
+          setFormProduto(initialProductForm);
+          setImagem(null);
+        }}
+        form={formProduto}
+        setFormValue={setProductFormValue}
+        imagem={imagem}
+        onSelecionarImagem={handleSelecionarImagem}
+        onSubmit={handleCadastrarProduto}
+        salvando={salvando}
+        listaSetores={listaSetores}
+        listaSubsetores={listaSubsetores}
+      />
 
-    <ProductFormModal
-      visible={modalProdutoVisivel}
-      onClose={() => {
-        setModalProdutoVisivel(false);
-        setFormProduto(initialProductForm);
-        setImagem(null);
-      }}
-      form={formProduto}
-      setFormValue={setProductFormValue}
-      imagem={imagem}
-      onSelecionarImagem={handleSelecionarImagem}
-      onSubmit={handleCadastrarProduto}
-      salvando={salvando}
-      listaSetores={listaSetores}
-      listaSubsetores={listaSubsetores}
-    />
+      <ProductDetailModal
+        item={itemSelecionado}
+        visible={Boolean(itemSelecionado)}
+        baseUrl={BASE_URL}
+        onClose={() => setItemSelecionado(null)}
+        onExcluir={handleExcluirProduto}
+        onMaryPatch={handleMaryPatch}
+        listaSetores={listaSetores}
+      />
 
-    <ProductDetailModal
-      item={itemSelecionado}
-      visible={Boolean(itemSelecionado)}
-      baseUrl={BASE_URL}
-      onClose={() => setItemSelecionado(null)}
-      onExcluir={handleExcluirProduto}
-      onMaryPatch={handleMaryPatch}
-      listaSetores={listaSetores}
-    />
-
-    <QuickMovementModal
-      visible={modalRapidoVisivel}
-      onClose={() => setModalRapidoVisivel(false)}
-      tipoRapido={tipoRapido}
-      itemSelecionado={itemRapidoSelecionado}
-      quantidadeRapida={quantidadeRapida}
-      onQuantidadeChange={setQuantidadeRapida}
-      onConfirmar={confirmarMovimentacaoRapida}
-    />
-
-  </SafeAreaView>
-)};
+      <QuickMovementModal
+        visible={modalRapidoVisivel}
+        onClose={() => setModalRapidoVisivel(false)}
+        tipoRapido={tipoRapido}
+        itemSelecionado={itemRapidoSelecionado}
+        quantidadeRapida={quantidadeRapida}
+        onQuantidadeChange={setQuantidadeRapida}
+        onConfirmar={confirmarMovimentacaoRapida}
+      />
+    </SafeAreaView>
+  );
+}

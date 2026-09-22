@@ -42,25 +42,27 @@ export default function LoginScreen({ username, setUsername, password, setPasswo
         ]}>
           
           {/* Painel Esquerdo (Texto) */}
-          <View style={[styles.heroPanel, isLargeScreen && styles.heroPanelLarge]}>
+          <View style={[styles.heroPanel, isLargeScreen ? styles.heroPanelLarge : styles.heroPanelMobile]}>
             <View style={styles.brandRow}>
               <View style={styles.brandMark}>
                 <Text style={styles.brandMarkText}>CF</Text>
               </View>
-              <View>
+              <View style={{ flexShrink: 1 }}>
                 <Text style={styles.logo}>CapFlow</Text>
                 <Text style={styles.subtitle}>Plataforma de Comando de Inventário</Text>
               </View>
             </View>
 
-            <Text style={styles.headline}>Domine seu Inventário em Tempo Real</Text>
+            <Text style={[styles.headline, !isLargeScreen && { fontSize: 24, lineHeight: 32 }]}>
+              Domine seu Inventário em Tempo Real
+            </Text>
             <Text style={styles.description}>
               Acompanhe estoque, setores e movimentações em uma experiência mais precisa, segura e pronta para rotina empresarial.
             </Text>
           </View>
 
           {/* Painel Direito (Login) */}
-          <View style={[styles.loginPanel, isLargeScreen && styles.loginPanelLarge]}>
+          <View style={[styles.loginPanel, isLargeScreen ? styles.loginPanelLarge : styles.loginPanelMobile]}>
             <Text style={styles.cardEyebrow}>Acesso Seguro</Text>
             <Text style={styles.cardTitle}>Entrar no console</Text>
 
@@ -160,6 +162,14 @@ const styles = StyleSheet.create({
   heroPanelLarge: {
     flex: 1.2,
     maxWidth: 600,
+  },
+  heroPanelMobile: {
+    padding: 20,
+    borderRadius: 18,
+  },
+  loginPanelMobile: {
+    padding: 20,
+    borderRadius: 18,
   },
   brandRow: {
     flexDirection: 'row',
