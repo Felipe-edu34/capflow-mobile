@@ -23,10 +23,27 @@ export default function ProductFormModal({
   const validarEEnviar = () => {
     const novosErros = {};
 
-    if (!form.nome?.trim()) novosErros.nome = 'O nome do produto é obrigatório';
-    if (!form.quantidade?.toString().trim()) novosErros.quantidade = 'Defina a quantidade inicial';
-    if (!form.minimo?.toString().trim()) novosErros.minimo = 'Defina o estoque mínimo de segurança';
-    if (!form.setorId) novosErros.setorId = 'Selecione o setor ou sub-setor de destino';
+    if (!form.nome?.trim()) {
+      novosErros.nome = 'O nome do produto é obrigatório';
+    }
+
+    const qtdStr = form.quantidade?.toString().trim();
+    if (!qtdStr) {
+      novosErros.quantidade = 'Defina a quantidade inicial';
+    } else if (isNaN(Number(qtdStr)) || Number(qtdStr) < 0) {
+      novosErros.quantidade = 'A quantidade inicial deve ser um número igual ou maior que zero';
+    }
+
+    const minStr = form.minimo?.toString().trim();
+    if (!minStr) {
+      novosErros.minimo = 'Defina o estoque mínimo de segurança';
+    } else if (isNaN(Number(minStr)) || Number(minStr) < 0) {
+      novosErros.minimo = 'O estoque mínimo deve ser um número igual ou maior que zero';
+    }
+
+    if (!form.setorId) {
+      novosErros.setorId = 'Selecione o setor ou sub-setor de destino';
+    }
 
     setErros(novosErros);
 
@@ -66,87 +83,104 @@ export default function ProductFormModal({
   return (
     <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
       <View style={modernStyles.modalOverlay}>
-        <View style={modernStyles.modalContainer}>
+        <View style={modernStyles.modalContainer} accessibilityRole="dialog" accessibilityLabel="Cadastrar Novo Produto">
           
           <View style={modernStyles.modalHeader}>
             <Text style={modernStyles.modalTitle}>Cadastrar Novo Produto</Text>
-            <TouchableOpacity style={modernStyles.modalCloseBtn} onPress={onClose} disabled={salvando}>
+            <TouchableOpacity
+              style={modernStyles.modalCloseBtn}
+              onPress={onClose}
+              disabled={salvando}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar modal de cadastro de produto"
+            >
               <Text style={modernStyles.modalCloseText}>×</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView contentContainerStyle={modernStyles.modalBody} showsVerticalScrollIndicator={false}>
             
-            <Text style={modernStyles.formLabel}>Nome do Produto</Text>
+            <Text style={modernStyles.formLabel} nativeID="label-nome-produto">Nome do Produto</Text>
             <TextInput
               style={[ modernStyles.formInput, focusedField === 'nome' && modernStyles.formInputFocus, erros.nome && modernStyles.formInputError ]}
               placeholder="Ex: estopa cinza"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor="#64748B"
               value={form.nome}
               onChangeText={(val) => handleInputChange('nome', val)}
               onFocus={() => setFocusedField('nome')}
               onBlur={() => setFocusedField(null)}
               editable={!salvando}
+              accessibilityLabel="Nome do Produto"
+              accessibilityLabelledBy="label-nome-produto"
             />
-            {erros.nome && <Text style={modernStyles.formError}>{erros.nome}</Text>}
+            {erros.nome && <Text style={modernStyles.formError} accessibilityLiveRegion="polite">{erros.nome}</Text>}
 
             <View style={modernStyles.inputRow}>
               <View style={modernStyles.inputColumn}>
-                <Text style={modernStyles.formLabel}>Quantidade Real</Text>
+                <Text style={modernStyles.formLabel} nativeID="label-quantidade-produto">Quantidade Real</Text>
                 <TextInput
                   style={[ modernStyles.formInput, focusedField === 'quantidade' && modernStyles.formInputFocus, erros.quantidade && modernStyles.formInputError ]}
                   placeholder="0"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor="#64748B"
                   keyboardType="numeric"
                   value={form.quantidade}
                   onChangeText={(val) => handleInputChange('quantidade', val)}
                   onFocus={() => setFocusedField('quantidade')}
                   onBlur={() => setFocusedField(null)}
                   editable={!salvando}
+                  accessibilityLabel="Quantidade Real"
+                  accessibilityLabelledBy="label-quantidade-produto"
                 />
-                {erros.quantidade && <Text style={modernStyles.formError}>{erros.quantidade}</Text>}
+                {erros.quantidade && <Text style={modernStyles.formError} accessibilityLiveRegion="polite">{erros.quantidade}</Text>}
               </View>
 
               <View style={modernStyles.inputColumn}>
-                <Text style={modernStyles.formLabel}>Unidade</Text>
+                <Text style={modernStyles.formLabel} nativeID="label-unidade-produto">Unidade</Text>
                 <TextInput
                   style={[ modernStyles.formInput, focusedField === 'unidade' && modernStyles.formInputFocus ]}
                   placeholder="UN"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor="#64748B"
                   value={form.unidade}
                   onChangeText={(val) => handleInputChange('unidade', val)}
                   onFocus={() => setFocusedField('unidade')}
                   onBlur={() => setFocusedField(null)}
                   editable={!salvando}
+                  accessibilityLabel="Unidade de Medida"
+                  accessibilityLabelledBy="label-unidade-produto"
                 />
               </View>
             </View>
 
-            <Text style={modernStyles.formLabel}>Estoque Mínimo de Segurança</Text>
+            <Text style={modernStyles.formLabel} nativeID="label-minimo-produto">Estoque Mínimo de Segurança</Text>
             <TextInput
               style={[ modernStyles.formInput, focusedField === 'minimo' && modernStyles.formInputFocus, erros.minimo && modernStyles.formInputError ]}
               placeholder="Ex: 5"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor="#64748B"
               keyboardType="numeric"
               value={form.minimo}
               onChangeText={(val) => handleInputChange('minimo', val)}
               onFocus={() => setFocusedField('minimo')}
               onBlur={() => setFocusedField(null)}
               editable={!salvando}
+              accessibilityLabel="Estoque Mínimo de Segurança"
+              accessibilityLabelledBy="label-minimo-produto"
             />
-            {erros.minimo && <Text style={modernStyles.formError}>{erros.minimo}</Text>}
+            {erros.minimo && <Text style={modernStyles.formError} accessibilityLiveRegion="polite">{erros.minimo}</Text>}
 
             {/* SETOR DE DESTINO */}
-            <Text style={modernStyles.formLabel}>Setor de Destino</Text>
+            <Text style={modernStyles.formLabel} nativeID="label-setor-destino">Setor de Destino</Text>
             <TouchableOpacity
               style={[ modernStyles.formInput, focusedField === 'setor' && modernStyles.formInputFocus, erros.setorId && modernStyles.formInputError, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
               onPress={() => !salvando && setSetorDropdownAberto(!setorDropdownAberto)}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Selecionar Setor de Destino. Atual: ${nomeSelecionadoExibicao}`}
+              accessibilityState={{ expanded: setorDropdownAberto }}
             >
-              <Text style={{ color: form.setorId ? '#0F172A' : '#94A3B8', fontSize: 14, fontWeight: '500' }}>
+              <Text style={{ color: form.setorId ? '#0F172A' : '#64748B', fontSize: 14, fontWeight: '500' }}>
                 {nomeSelecionadoExibicao}
               </Text>
-              <Text style={{ color: '#64748B', fontSize: 10 }}>{setorDropdownAberto ? '▲' : '▼'}</Text>
+              <Text style={{ color: '#475569', fontSize: 10 }}>{setorDropdownAberto ? '▲' : '▼'}</Text>
             </TouchableOpacity>
 
             {/* SANFONA (ACCORDION) DOS SETORES E SUB-SETORES */}
@@ -251,21 +285,35 @@ export default function ProductFormModal({
                 )}
               </ScrollView>
             )}
-            {erros.setorId && <Text style={modernStyles.formError}>{erros.setorId}</Text>}
+            {erros.setorId && <Text style={modernStyles.formError} accessibilityLiveRegion="polite">{erros.setorId}</Text>}
 
-            <Text style={modernStyles.formLabel}>Imagem do Produto (Opcional)</Text>
-            <TouchableOpacity style={modernStyles.imageUploadBox} onPress={handleEscolhaImagem} disabled={salvando} activeOpacity={0.6}>
+            <Text style={modernStyles.formLabel} nativeID="label-imagem-produto">Imagem do Produto (Opcional)</Text>
+            <TouchableOpacity
+              style={modernStyles.imageUploadBox}
+              onPress={handleEscolhaImagem}
+              disabled={salvando}
+              activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel="Selecionar imagem do produto"
+            >
               <Text style={[modernStyles.imageUploadText, imagem && { color: '#059669', fontWeight: '700' }]}>
                 {imagem ? `✓ Imagem Selecionada (${imagem.name || imagem.fileName || 'Foto'})` : 'Clique para selecionar imagem'}
               </Text>
             </TouchableOpacity>
 
             {Platform.select({
-              web: <input type="file" ref={fileInputRef} accept="image/*" onChange={onSelecionarImagem} disabled={salvando} style={{ display: 'none' }} />,
+              web: <input type="file" ref={fileInputRef} accept="image/*" aria-label="Upload de imagem do produto" onChange={onSelecionarImagem} disabled={salvando} style={{ display: 'none' }} />,
               default: null
             })}
 
-            <TouchableOpacity style={[modernStyles.btnSubmit, salvando && modernStyles.btnSubmitLoading]} onPress={validarEEnviar} disabled={salvando} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={[modernStyles.btnSubmit, salvando && modernStyles.btnSubmitLoading]}
+              onPress={validarEEnviar}
+              disabled={salvando}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Salvar no Estoque"
+            >
               {salvando ? (
                 <>
                   <ActivityIndicator color="#FFFFFF" size="small" />
