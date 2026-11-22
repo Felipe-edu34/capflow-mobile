@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import styles from './modernStyles';
 import InventoryFilters from './inventory/InventoryFilters';
 import InventoryGroupList from './inventory/InventoryGroupList';
@@ -32,28 +33,33 @@ export default function InventorySection({
           <Text style={styles.sectionTitle}>Produtos por setor</Text>
         </View>
         
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <View style={[styles.countBadge, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+            <Feather name="package" size={12} color="#475569" />
+            <Text style={styles.countBadgeText}>{totalItens} itens</Text>
+          </View>
+
           <TouchableOpacity 
             style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
               backgroundColor: '#0EA5E9',
               paddingHorizontal: 16,
               paddingVertical: 10,
               borderRadius: 10,
               shadowColor: '#0EA5E9',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
+              shadowOpacity: 0.18,
               shadowRadius: 8,
-              elevation: 4
+              elevation: 4,
             }}
             onPress={onNovoProduto}
             activeOpacity={0.8}
           >
+            <Feather name="plus-circle" size={15} color="#FFFFFF" />
             <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>+ Novo Produto</Text>
           </TouchableOpacity>
-
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{totalItens} itens</Text>
-          </View>
         </View>
       </View>
 

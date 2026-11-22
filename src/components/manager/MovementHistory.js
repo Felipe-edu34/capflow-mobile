@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import modernStyles from './modernStyles';
 import MovementCard from './movements/MovementCard';
 import { exportarArquivoCsv } from '../../utils/csvExporter';
 
@@ -90,18 +92,42 @@ export default function MovementHistory({ movimentacoes = [], itens = [] }) {
   };
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
+    <View style={modernStyles.listPanel}>
       {/* CABEÇALHO */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#111827' }}>Histórico de Movimentações</Text>
+      <View style={modernStyles.listHeader}>
+        <View>
+          <Text style={modernStyles.sectionEyebrow}>Auditoria Operacional</Text>
+          <Text style={modernStyles.sectionTitle}>Histórico de Movimentações</Text>
+        </View>
         
-        <TouchableOpacity 
-          onPress={gerarRelatorioCSV}
-          style={{ backgroundColor: '#10B981', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
-          activeOpacity={0.8}
-        >
-          <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>📄 Exportar Relatório</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <View style={[modernStyles.countBadge, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+            <Feather name="activity" size={12} color="#475569" />
+            <Text style={modernStyles.countBadgeText}>{movimentacoesUnicas.length} registros</Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={gerarRelatorioCSV}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              backgroundColor: '#10B981',
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 10,
+              shadowColor: '#10B981',
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.18,
+              shadowRadius: 6,
+              elevation: 3,
+            }}
+            activeOpacity={0.8}
+          >
+            <Feather name="download" size={15} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Exportar Relatório CSV</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* LISTA DE MOVIMENTAÇÕES */}
@@ -117,9 +143,13 @@ export default function MovementHistory({ movimentacoes = [], itens = [] }) {
         ))}
 
         {movimentacoesUnicas.length === 0 && (
-          <Text style={{ textAlign: 'center', color: '#6B7280', marginTop: 40 }}>
-            Nenhuma movimentação registrada ainda.
-          </Text>
+          <View style={modernStyles.emptyState}>
+            <Feather name="repeat" size={30} color="#94A3B8" style={{ marginBottom: 10 }} />
+            <Text style={modernStyles.emptyTitle}>Nenhuma movimentação registrada</Text>
+            <Text style={modernStyles.emptyText}>
+              Entradas, saídas e novos cadastros de estoque aparecerão automaticamente aqui.
+            </Text>
+          </View>
         )}
       </ScrollView>
     </View>

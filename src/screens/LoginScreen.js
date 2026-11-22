@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -11,85 +11,178 @@ import {
   KeyboardAvoidingView, 
   Platform 
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
 export default function LoginScreen({ username, setUsername, password, setPassword, handleLogin, loading }) {
-  // Pega a largura da tela em tempo real para fazer a responsividade
   const { width } = useWindowDimensions();
-  
-  // Define que telas maiores que 900px são consideradas "Desktop/Tablet Landscape"
   const isLargeScreen = width > 900;
+
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [campoFocado, setCampoFocado] = useState(null);
 
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* O backdrop (fundo com linhas) fica absoluto atrás de tudo */}
+      {/* Elementos decorativos de fundo */}
       <View style={styles.backdrop}>
+        <View style={styles.glowCircleOne} />
+        <View style={styles.glowCircleTwo} />
         <View style={styles.gridLine} />
         <View style={[styles.gridLine, styles.gridLineTwo]} />
       </View>
 
-      {/* Envolvemos o conteúdo no ScrollView */}
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Container principal que muda a direção dependendo da tela */}
         <View style={[
           styles.contentContainer,
           isLargeScreen ? styles.rowLayout : styles.columnLayout
         ]}>
           
-          {/* Painel Esquerdo (Texto) */}
+          {/* Painel Esquerdo (Apresentação da Plataforma) */}
           <View style={[styles.heroPanel, isLargeScreen ? styles.heroPanelLarge : styles.heroPanelMobile]}>
             <View style={styles.brandRow}>
               <View style={styles.brandMark}>
-                <Text style={styles.brandMarkText}>CF</Text>
+                <Feather name="layers" size={22} color="#FFFFFF" />
               </View>
               <View style={{ flexShrink: 1 }}>
-                <Text style={styles.logo}>CapFlow</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Text style={styles.logo}>CapFlow</Text>
+                  <View style={styles.versionBadge}>
+                    <Text style={styles.versionBadgeText}>PRO</Text>
+                  </View>
+                </View>
                 <Text style={styles.subtitle}>Plataforma de Comando de Inventário</Text>
               </View>
             </View>
 
-            <Text style={[styles.headline, !isLargeScreen && { fontSize: 24, lineHeight: 32 }]}>
+            <Text style={[styles.headline, !isLargeScreen && { fontSize: 26, lineHeight: 34 }]}>
               Domine seu Inventário em Tempo Real
             </Text>
             <Text style={styles.description}>
-              Acompanhe estoque, setores e movimentações em uma experiência mais precisa, segura e pronta para rotina empresarial.
+              Acompanhe estoque, setores e movimentações em uma experiência precisa, auditável e desenhada para alta performance operacional.
             </Text>
+
+            {/* Destaques de Funcionalidades */}
+            <View style={styles.featureList}>
+              <View style={styles.featureItem}>
+                <View style={[styles.featureIconBox, { backgroundColor: 'rgba(14, 165, 233, 0.15)' }]}>
+                  <Feather name="activity" size={16} color="#38BDF8" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.featureTitle}>Monitoramento Analítico</Text>
+                  <Text style={styles.featureDesc}>Indicadores de volume, ocupação por setor e alertas automáticos de ruptura.</Text>
+                </View>
+              </View>
+
+              <View style={styles.featureItem}>
+                <View style={[styles.featureIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                  <Feather name="check-circle" size={16} color="#34D399" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.featureTitle}>Rastreabilidade e Auditoria</Text>
+                  <Text style={styles.featureDesc}>Histórico completo de entradas e saídas com exportação instantânea para CSV.</Text>
+                </View>
+              </View>
+            </View>
           </View>
 
-          {/* Painel Direito (Login) */}
+          {/* Painel Direito (Card de Autenticação) */}
           <View style={[styles.loginPanel, isLargeScreen ? styles.loginPanelLarge : styles.loginPanelMobile]}>
-            <Text style={styles.cardEyebrow}>Acesso Seguro</Text>
+            <View style={styles.cardBadgeRow}>
+              <View style={styles.cardBadge}>
+                <Feather name="shield" size={13} color="#0284C7" />
+                <Text style={styles.cardEyebrow}>Acesso Seguro</Text>
+              </View>
+            </View>
+
             <Text style={styles.cardTitle}>Entrar no console</Text>
+            <Text style={styles.cardSubtitle}>
+              Insira suas credenciais corporativas para acessar o painel de controle.
+            </Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Usuário"
-              placeholderTextColor="#8A97A8"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Senha"
-              placeholderTextColor="#8A97A8"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            {/* Campo Usuário */}
+            <Text style={styles.inputLabel}>Usuário</Text>
+            <View style={[
+              styles.inputWrapper,
+              campoFocado === 'username' && styles.inputWrapperFocused
+            ]}>
+              <Feather 
+                name="user" 
+                size={18} 
+                color={campoFocado === 'username' ? '#0EA5E9' : '#94A3B8'} 
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Usuário"
+                placeholderTextColor="#94A3B8"
+                value={username}
+                onChangeText={setUsername}
+                onFocus={() => setCampoFocado('username')}
+                onBlur={() => setCampoFocado(null)}
+                autoCapitalize="none"
+                accessibilityLabel="Usuário"
+              />
+            </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-              {loading ? <ActivityIndicator color="#06111F" /> : <Text style={styles.buttonText}>Acessar Dashboard</Text>}
+            {/* Campo Senha */}
+            <Text style={styles.inputLabel}>Senha de Acesso</Text>
+            <View style={[
+              styles.inputWrapper,
+              campoFocado === 'password' && styles.inputWrapperFocused
+            ]}>
+              <Feather 
+                name="lock" 
+                size={18} 
+                color={campoFocado === 'password' ? '#0EA5E9' : '#94A3B8'} 
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Senha"
+                placeholderTextColor="#94A3B8"
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setCampoFocado('password')}
+                onBlur={() => setCampoFocado(null)}
+                secureTextEntry={!mostrarSenha}
+                accessibilityLabel="Senha"
+              />
+              <TouchableOpacity 
+                onPress={() => setMostrarSenha(!mostrarSenha)} 
+                style={styles.eyeButton}
+                accessibilityRole="button"
+                accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                <Feather name={mostrarSenha ? 'eye-off' : 'eye'} size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.button, loading && styles.buttonDisabled]} 
+              onPress={handleLogin} 
+              disabled={loading}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Acessar Dashboard"
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <View style={styles.buttonInner}>
+                  <Text style={styles.buttonText}>Acessar Dashboard</Text>
+                  <Feather name="arrow-right" size={18} color="#FFFFFF" />
+                </View>
+              )}
             </TouchableOpacity>
 
             <View style={styles.securityRow}>
               <View style={styles.statusDot} />
-              <Text style={styles.securityText}>Sessão protegida por autenticação via token</Text>
+              <Text style={styles.securityText}>Sessão criptografada e protegida via Token REST</Text>
             </View>
           </View>
 
@@ -102,44 +195,62 @@ export default function LoginScreen({ username, setUsername, password, setPasswo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07111F',
+    backgroundColor: '#060E1A',
   },
   scrollContent: {
-    flexGrow: 1, // Permite que o scroll ocupe a tela toda se o conteúdo for menor, mas role se for maior
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40, // Dá um respiro para não grudar no topo/base ao rolar
+    paddingVertical: 40,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 0.35,
-    zIndex: -1, // Garante que o fundo não bloqueie o clique nos botões
+    overflow: 'hidden',
+    zIndex: -1,
+  },
+  glowCircleOne: {
+    position: 'absolute',
+    top: -120,
+    left: -100,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
+  },
+  glowCircleTwo: {
+    position: 'absolute',
+    bottom: -140,
+    right: -80,
+    width: 420,
+    height: 420,
+    borderRadius: 210,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
   },
   gridLine: {
     position: 'absolute',
-    top: '18%',
+    top: '20%',
     left: -40,
     right: -40,
     height: 1,
-    backgroundColor: '#17304B',
-    transform: [{ rotate: '-11deg' }],
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    transform: [{ rotate: '-9deg' }],
   },
   gridLineTwo: {
-    top: '70%',
-    backgroundColor: '#154E5D',
-    transform: [{ rotate: '8deg' }],
+    top: '74%',
+    backgroundColor: 'rgba(14, 165, 233, 0.08)',
+    transform: [{ rotate: '7deg' }],
   },
   contentContainer: {
     width: '100%',
-    maxWidth: 1100,
+    maxWidth: 1120,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 40,
+    gap: 36,
   },
   rowLayout: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'space-between',
   },
   columnLayout: {
@@ -147,145 +258,255 @@ const styles = StyleSheet.create({
   },
   heroPanel: {
     width: '100%',
-    maxWidth: 540,
-    padding: 32,
-    backgroundColor: '#0C1A30',
+    maxWidth: 560,
+    padding: 36,
+    backgroundColor: '#0B172A',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(94, 234, 212, 0.14)',
+    borderColor: 'rgba(56, 189, 248, 0.18)',
+    justifyContent: 'space-between',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.15,
-    shadowRadius: 30,
+    shadowOpacity: 0.25,
+    shadowRadius: 32,
     elevation: 12,
   },
   heroPanelLarge: {
-    flex: 1.2,
+    flex: 1.15,
     maxWidth: 600,
   },
   heroPanelMobile: {
-    padding: 20,
-    borderRadius: 18,
+    padding: 24,
+    borderRadius: 20,
   },
   loginPanelMobile: {
-    padding: 20,
-    borderRadius: 18,
+    padding: 24,
+    borderRadius: 20,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   brandMark: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 50,
+    height: 50,
+    borderRadius: 15,
     backgroundColor: '#0EA5E9',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  brandMarkText: {
-    color: '#FFFFFF',
-    fontWeight: '900',
-    fontSize: 16,
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
   logo: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '900',
     color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  versionBadge: {
+    backgroundColor: 'rgba(14, 165, 233, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.4)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  versionBadgeText: {
+    color: '#38BDF8',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
   subtitle: {
-    fontSize: 12,
-    color: '#8EA4BC',
-    marginTop: 2,
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 3,
     textTransform: 'uppercase',
     letterSpacing: 1,
+    fontWeight: '700',
   },
   headline: {
-    fontSize: 38,
-    lineHeight: 46,
+    fontSize: 34,
+    lineHeight: 42,
     fontWeight: '900',
     color: '#FFFFFF',
-    marginBottom: 18,
+    marginBottom: 14,
+    letterSpacing: -0.5,
   },
   description: {
     fontSize: 15,
-    lineHeight: 24,
-    color: '#B6C4D5',
-    maxWidth: 500,
-    marginBottom: 10,
+    lineHeight: 23,
+    color: '#94A3B8',
+    marginBottom: 28,
+  },
+  featureList: {
+    gap: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    paddingTop: 22,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  featureIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  featureTitle: {
+    color: '#F8FAFC',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  featureDesc: {
+    color: '#94A3B8',
+    fontSize: 12,
+    lineHeight: 18,
   },
   loginPanel: {
     backgroundColor: '#FFFFFF',
-    padding: 32,
+    padding: 36,
     borderRadius: 24,
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 440,
     borderWidth: 1,
-    borderColor: '#E6EDF4',
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.12,
-    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.14,
+    shadowRadius: 30,
     elevation: 10,
   },
   loginPanelLarge: {
-    flex: 0.8,
-    marginTop: 0,
+    flex: 0.85,
+  },
+  cardBadgeRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  cardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
   },
   cardEyebrow: {
-    color: '#0F766E',
-    fontSize: 12,
-    fontWeight: '900',
+    color: '#0284C7',
+    fontSize: 11,
+    fontWeight: '800',
     textTransform: 'uppercase',
-    marginBottom: 8,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   cardTitle: {
     fontSize: 26,
     fontWeight: '900',
     color: '#0F172A',
-    marginBottom: 26,
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 19,
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+  },
+  inputWrapperFocused: {
+    borderColor: '#0EA5E9',
+    backgroundColor: '#FFFFFF',
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#DDE5EF',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 16,
+    flex: 1,
+    paddingVertical: 14,
     fontSize: 15,
     color: '#0F172A',
+    fontWeight: '500',
+    ...Platform.select({
+      web: { outlineStyle: 'none' },
+    }),
+  },
+  eyeButton: {
+    padding: 8,
   },
   button: {
     backgroundColor: '#0EA5E9',
-    padding: 16,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
     borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 8,
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   buttonText: {
     color: '#FFFFFF',
-    fontWeight: '900',
+    fontWeight: '800',
     fontSize: 15,
   },
   securityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 22,
-    gap: 10,
+    justifyContent: 'center',
+    marginTop: 24,
+    paddingTop: 18,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    gap: 8,
   },
   statusDot: {
     width: 8,
     height: 8,
-    borderRadius: 8,
-    backgroundColor: '#22C55E',
+    borderRadius: 4,
+    backgroundColor: '#10B981',
   },
   securityText: {
     color: '#64748B',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

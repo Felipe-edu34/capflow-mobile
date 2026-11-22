@@ -3,6 +3,7 @@ import { ScrollView, Text, TouchableOpacity, View, Platform, Alert, useWindowDim
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
+import { Feather } from '@expo/vector-icons';
 
 // --- ESTILOS ---
 import modernStyles from '../components/manager/modernStyles';
@@ -90,6 +91,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
     carregarSetores,
     carregarSubsetores,
     carregarMovimentacoes,
+    carregarFuncionariosCombo,
   } = useManagerData(token);
 
   // Estados dos formulários de modal
@@ -340,6 +342,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
   };
 
   const abrirModalEdicaoSetor = (setor) => {
+    carregarFuncionariosCombo();
     setFormSetor({
       id: setor.id,
       nome: setor.nome,
@@ -503,21 +506,30 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
         <View style={{ flex: 1, flexDirection: 'column' }}>
           {/* Barra Superior */}
           <View style={modernStyles.topBar}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              <TouchableOpacity onPress={() => setSidebarAberta(!sidebarAberta)} style={modernStyles.toggleButton}>
-                <Text style={modernStyles.toggleButtonText}>{sidebarAberta ? '✕' : '☰'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <TouchableOpacity
+                onPress={() => setSidebarAberta(!sidebarAberta)}
+                style={[modernStyles.toggleButton, { borderWidth: 1, borderColor: '#E2E8F0' }]}
+                activeOpacity={0.7}
+              >
+                <Feather name={sidebarAberta ? 'sidebar' : 'menu'} size={17} color="#334155" />
               </TouchableOpacity>
-              <Text style={modernStyles.pageHeading}>
-                Painel Geral / {
-                  abaAtiva === 'dashboard' ? 'Visão Geral' : 
-                  abaAtiva === 'produtos' ? 'Inventário' :
-                  abaAtiva === 'setores' ? 'Setores' :
-                  abaAtiva === 'movimentacoes' ? 'Movimentações' :
-                  abaAtiva === 'funcionarios' ? 'Equipe' : abaAtiva
-                }
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748B' }}>Painel Geral</Text>
+                <Feather name="chevron-right" size={14} color="#94A3B8" />
+                <Text style={modernStyles.pageHeading}>
+                  {
+                    abaAtiva === 'dashboard' ? 'Visão Geral' : 
+                    abaAtiva === 'produtos' ? 'Inventário' :
+                    abaAtiva === 'setores' ? 'Setores' :
+                    abaAtiva === 'movimentacoes' ? 'Movimentações' :
+                    abaAtiva === 'funcionarios' ? 'Equipe' : abaAtiva
+                  }
+                </Text>
+              </View>
             </View>
-            <View style={modernStyles.badgeStatus}>
+            <View style={[modernStyles.badgeStatus, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#0284C7' }} />
               <Text style={modernStyles.badgeStatusText}>Gestor Ativo</Text>
             </View>
           </View>
@@ -563,8 +575,10 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
                 <SectorList 
                   setores={listaSetores} 
                   subsetores={listaSubsetores} 
-                  itens={itens} 
+                  itens={itens}
+                  funcionarios={listaFuncionarios}
                   onNovoSetor={() => {
+                    carregarFuncionariosCombo();
                     setFormSetor(initialSectorForm);
                     setModalSetorVisivel(true);
                   }}
@@ -586,7 +600,7 @@ export default function ManagerDashboard({ perfil, token, handleLogout }) {
 
               {/* ABA 5: EQUIPE / FUNCIONÁRIOS */}
               {abaAtiva === 'funcionarios' && (
-                <FuncionariosScreen token={token} />
+                <FuncionariosScreen token={token} onFuncionarioCriado={carregarFuncionariosCombo} />
               )}
             </View>
           </ScrollView>
